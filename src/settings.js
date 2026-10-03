@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -119,6 +119,12 @@ function migrate(target) {
     if (target.version < 5) {
         if (target.scenePrompt === LEGACY_SCENE_PROMPT_V4) target.scenePrompt = DEFAULT_SCENE_PROMPT;
         target.version = 5;
+        target.__changed = true;
+    }
+    // v5 → v6: 인원수는 표준 태그(2girls 등), 사람마다 성별 단어, 비유 금지('puppy-like' 를 강아지로 그렸다), 눈에 보이는 자세만
+    if (target.version < 6) {
+        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V5) target.scenePrompt = DEFAULT_SCENE_PROMPT;
+        target.version = 6;
         target.__changed = true;
     }
 }
