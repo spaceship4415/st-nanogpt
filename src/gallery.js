@@ -273,6 +273,9 @@ export function mountGalleryView(container, { onUseMeta }) {
         $viewer.find('.stng-send-nochat').prop('hidden', canSendToChat());
         $viewer.prop('hidden', false);
         $grid.prop('hidden', true);
+        // 상세 화면에서는 격자용 버튼([선택]·[더 보기])을 숨긴다
+        $selectToggle.prop('hidden', true);
+        $more.prop('hidden', true);
         $viewer[0].scrollIntoView({ block: 'nearest' });
         renderMeta(url);
     }
@@ -332,6 +335,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         index = -1;
         $viewer.prop('hidden', true);
         $grid.prop('hidden', false);
+        renderMoreButton();
     }
 
     /** @param {number} step */
