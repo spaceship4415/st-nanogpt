@@ -166,14 +166,12 @@ function buildScenePrompt(messageId) {
     if (!isSceneCandidate(target)) throw new Error(tr('scene_no_message', 'That message cannot be used.'));
 
     const parts = [];
-    let persona = '';
     if (settings.sceneIncludeCards) {
         for (const c of characterDescriptions()) {
             parts.push(`[Character: ${c.name}]\n${c.description}`);
         }
-        persona = substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim();
-        // 롤플 글에서 페르소나는 이름 대신 'you'로 나오는 일이 많아, 그게 이 사람이라고 알려 준다
-        if (persona) parts.push(`[User: ${context.name1}] (the person the user plays; "you" in the story means ${context.name1})\n${persona}`);
+        const persona = substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim();
+        if (persona) parts.push(`[User: ${context.name1}]\n${persona}`);
     }
 
     const before = [];
@@ -183,8 +181,6 @@ function buildScenePrompt(messageId) {
     if (before.length) parts.push(`[Story so far]\n${before.join('\n\n')}`);
 
     parts.push(`[Scene to illustrate]\n${target.name}: ${plain(target.mes)}`);
-    // 안 알려 주면 장면 속에 있어도 캐릭터만 그리는 일이 많다
-    if (persona) parts.push(`If ${context.name1} is present in this moment, include ${context.name1} with their appearance from [User: ${context.name1}].`);
     return parts.join('\n\n');
 }
 
