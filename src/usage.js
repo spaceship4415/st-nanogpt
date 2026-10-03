@@ -165,7 +165,10 @@ export function formatRelative(timestamp) {
 /** @param {string|number} value */
 function formatDate(value) {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' });
+    if (Number.isNaN(date.getTime())) return '';
+    // 올해면 연도를 빼서 카드에서 줄바꿈되지 않게
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    return date.toLocaleDateString(locale(), sameYear ? { month: 'long', day: 'numeric' } : { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 /**

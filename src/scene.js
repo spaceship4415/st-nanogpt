@@ -5,7 +5,7 @@ import { tr } from './i18n.js';
 import { getSettings } from './settings.js';
 
 /*
- * '메시지로 프롬프트': 고른 메시지(기본은 최신) 한 개를 장면으로 삼고, 그 앞 메시지 몇 개와
+ * '프롬프트 자동생성': 고른 메시지(기본은 최신) 한 개를 장면으로 삼고, 그 앞 메시지 몇 개와
  * 캐릭터·페르소나 설명을 참고 자료로 붙여 채팅 API(또는 고른 연결 프로필)에 이미지 프롬프트를 쓰게 한다.
  * ST 의 일반 프롬프트(프리셋·채팅 전체)를 쓰지 않아서 토큰이 적게 든다.
  */
@@ -127,7 +127,7 @@ function buildScenePrompt(messageId) {
 const SCENE_RESPONSE_LENGTH = 300;
 
 /**
- * '메시지로 프롬프트'에 쓸 수 있는 연결 프로필 목록. 연결 관리자 확장이 꺼져 있으면 null.
+ * '프롬프트 자동생성'에 쓸 수 있는 연결 프로필 목록. 연결 관리자 확장이 꺼져 있으면 null.
  * @returns {{ id: string, name: string }[]|null}
  */
 export function listSceneProfiles() {

@@ -210,6 +210,8 @@ body.stng-no-mes-button .stng_mes_scene {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    /* 탭마다 내용 길이가 달라도 패널 높이가 같아 제목·탭 줄이 튀지 않게 */
+    min-height: min(78dvh, 720px);
     text-align: left;
 }
 
@@ -335,10 +337,11 @@ body.stng-no-mes-button .stng_mes_scene {
     background-color: var(--black50a);
 }
 
+/* 넉넉함·주의·위험을 테마 색과 상관없이 같은 뜻으로(테마 강조색이 주황이면 평소에도 경고처럼 보였다) */
 .stng-bar-fill {
     height: 100%;
     border-radius: inherit;
-    background-color: var(--SmartThemeQuoteColor);
+    background-color: #3fb68b;
     transition: width 0.3s ease;
 }
 
@@ -347,7 +350,7 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 .stng-bar-fill.stng-danger {
-    background-color: #d9534f;
+    background-color: #e5534b;
 }
 
 .stng-usage-footer {
@@ -954,4 +957,68 @@ body.stng-no-mes-button .stng_mes_scene {
     white-space: normal;
     word-break: keep-all;
     font-size: 0.9em;
+}
+
+/* 생성 중 결과 자리: 고른 크기 비율로 미리 잡아 두고 지난 시간을 보여 준다 */
+.stng-img-pending {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-height: 70vh;
+    margin: 0 auto;
+    border: 1px dashed var(--SmartThemeBorderColor);
+    border-radius: 12px;
+    background: linear-gradient(110deg, var(--black30a) 30%, var(--black50a) 50%, var(--black30a) 70%);
+    background-size: 250% 100%;
+    animation: stng-shimmer 1.6s linear infinite;
+    font-size: 0.9em;
+}
+
+.stng-img-pending i {
+    font-size: 1.6em;
+    color: var(--SmartThemeQuoteColor);
+}
+
+@keyframes stng-shimmer {
+    to { background-position: -150% 0; }
+}
+
+/* 비어 있는 필수 칸 */
+.stng-panel .text_pole.stng-invalid {
+    border-color: #e5534b;
+    box-shadow: 0 0 0 1px #e5534b;
+}
+
+/* 프롬프트 자동생성: 제목 옆 작은 버튼으로 펼치는 상자 */
+.stng-auto-toggle .stng-auto-chevron {
+    font-size: 0.75em;
+    transition: transform 0.2s ease;
+}
+
+.stng-auto-toggle.stng-open .stng-auto-chevron {
+    transform: rotate(180deg);
+}
+
+.stng-auto-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+    border-radius: 6px;
+    background-color: var(--black30a);
+}
+
+/* 작은 버튼은 보이는 크기만 작게, 누르는 영역은 위아래로 늘려 44px */
+.stng-panel .stng-btn.stng-btn-small {
+    position: relative;
+}
+
+.stng-panel .stng-btn.stng-btn-small::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
 }

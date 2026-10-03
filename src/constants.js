@@ -69,7 +69,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     sendHidden: true,
     // 생성하자마자 서버 갤러리(user/images)에 저장. 끄면 채팅에 보낼 때만 저장한다
     autoSaveGallery: true,
-    // [메시지로 프롬프트]에 쓰는 지시문(시스템 프롬프트로 보낸다)
+    // [프롬프트 자동생성]에 쓰는 지시문(시스템 프롬프트로 보낸다)
     scenePrompt: DEFAULT_SCENE_PROMPT,
     // 메시지 … 메뉴의 [이 메시지로 이미지] 버튼
     messageButton: true,
@@ -77,6 +77,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     sceneContextMessages: 4,
     // 캐릭터·페르소나 설명(외모 등)을 참고로 붙일지
     sceneIncludeCards: true,
+    // 이미지 탭의 '프롬프트 자동생성' 상자를 펼쳐 둘지(마지막 상태 기억). 기본은 접음 = 직접 쓰기
+    sceneBoxOpen: false,
     // 프롬프트 작성에 쓸 연결 프로필 id. '' = 지금 채팅 연결
     sceneProfileId: '',
 });

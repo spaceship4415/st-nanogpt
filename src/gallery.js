@@ -69,6 +69,8 @@ export function mountGalleryView(container, { onUseMeta }) {
     let files = [];
     let index = -1;
     let loadToken = 0;
+    /** 서버에 실제로 있는 폴더 @type {Set<string>} */
+    let existingFolders = new Set();
 
     async function loadFolders() {
         const current = String($folder.val() || '') || galleryFolder();
@@ -78,6 +80,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         } catch (error) {
             console.warn(LOG_PREFIX, 'failed to list gallery folders', error);
         }
+        existingFolders = new Set(folders);
         if (!folders.includes(current)) folders.unshift(current);
         $folder.empty().append(folders.map(f => new Option(f, f))).val(current);
     }
@@ -90,7 +93,8 @@ export function mountGalleryView(container, { onUseMeta }) {
         $count.text(tr('loading', 'Loading…'));
         $empty.prop('hidden', true);
         try {
-            const list = await fetchImages(folder);
+            // 없는 폴더를 조회하면 ST 서버가 빈 폴더를 만들어 버리므로 조회하지 않는다
+            const list = existingFolders.has(folder) ? await fetchImages(folder) : [];
             if (token !== loadToken) return;
             files = list;
         } catch (error) {
@@ -163,7 +167,11 @@ export function mountGalleryView(container, { onUseMeta }) {
     }
 
     $folder.on('change', loadImages);
-    $root.find('.stng-gallery-refresh').on('click', loadImages);
+    // 새로고침은 폴더 목록부터(그사이 새 캐릭터 폴더가 생겼을 수 있다)
+    $root.find('.stng-gallery-refresh').on('click', async () => {
+        await loadFolders();
+        await loadImages();
+    });
     $viewer.find('.stng-gallery-back').on('click', closeViewer);
     $viewer.find('.stng-gallery-prev').on('click', () => step(-1));
     $viewer.find('.stng-gallery-next').on('click', () => step(1));

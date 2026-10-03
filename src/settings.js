@@ -84,7 +84,7 @@ function normalize(stored) {
  * @param {Record<string, any>} target
  */
 function migrate(target) {
-    // v1 → v2: '메시지로 프롬프트'가 고른 메시지 + 참고 자료 방식으로 바뀌어 기본 지시문도 바뀜.
+    // v1 → v2: '프롬프트 자동생성'이 고른 메시지 + 참고 자료 방식으로 바뀌어 기본 지시문도 바뀜.
     // 사용자가 고치지 않은 옛 기본값만 새 기본값으로 바꾼다
     if (target.version < 2) {
         if (target.scenePrompt === LEGACY_SCENE_PROMPT_V1) target.scenePrompt = DEFAULT_SCENE_PROMPT;

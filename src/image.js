@@ -312,6 +312,17 @@ export function mountImageView(container) {
     const $sceneMessage = $root.find('.stng-img-scene-msg');
     const $scenePreview = $root.find('.stng-scene-preview');
     const $sceneHint = $root.find('.stng-scene-hint');
+    const $autoToggle = $root.find('.stng-auto-toggle');
+    const $autoBox = $root.find('.stng-auto-box');
+
+    /** 자동생성 상자 펼치기/접기. 마지막 상태를 기억한다 */
+    function setAutoOpen(open) {
+        $autoBox.prop('hidden', !open);
+        $autoToggle.attr('aria-expanded', String(open)).toggleClass('stng-open', open);
+        setSetting('sceneBoxOpen', open);
+    }
+    $autoToggle.on('click', () => setAutoOpen($autoBox.prop('hidden')));
+    setAutoOpen(!!settings.sceneBoxOpen);
     const $promptOverlay = $root.find('.stng-prompt-overlay');
     const $steps = $root.find('.stng-img-steps');
     const $scale = $root.find('.stng-img-scale');
@@ -319,6 +330,9 @@ export function mountImageView(container) {
     const $status = $root.find('.stng-img-status');
     const $result = $root.find('.stng-img-result');
     const $preview = $root.find('.stng-img-preview');
+    const $pending = $root.find('.stng-img-pending');
+    const $resultMeta = $root.find('.stng-img-meta');
+    const $resultActions = $root.find('.stng-img-actions');
     const $strip = $root.find('.stng-img-strip');
     const $quota = $root.find('.stng-img-quota');
     const $scene = $root.find('.stng-img-scene');
@@ -410,6 +424,35 @@ export function mountImageView(container) {
         $scene.prop('disabled', busy || !canSendToChat());
     }
 
+    // 고친 칸은 빨간 표시를 지운다
+    $model.add($prompt).on('input change', function () {
+        $(this).removeClass('stng-invalid');
+    });
+
+    /** 생성을 기다리는 동안: 결과 자리를 고른 크기 비율로 잡고 지난 시간을 센다 */
+    let pendingTimer = null;
+    /** @param {string} size */
+    function showPending(size) {
+        const { width, height } = parseSize(size);
+        const started = Date.now();
+        const $text = $pending.find('span');
+        const tick = () => $text.text(tr('generating_elapsed', 'Generating… {0}s', Math.floor((Date.now() - started) / 1000)));
+        tick();
+        clearInterval(pendingTimer);
+        pendingTimer = setInterval(tick, 1000);
+        $pending.css('aspect-ratio', `${width} / ${height}`).prop('hidden', false);
+        $preview.add($resultMeta).add($resultActions).prop('hidden', true);
+        $result.prop('hidden', false);
+        $pending[0].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function hidePending() {
+        clearInterval(pendingTimer);
+        pendingTimer = null;
+        $pending.prop('hidden', true);
+        $preview.add($resultMeta).add($resultActions).prop('hidden', false);
+    }
+
     function setStatus(text, kind = '') {
         $status.text(text).attr('data-kind', kind).prop('hidden', !text);
     }
@@ -419,10 +462,19 @@ export function mountImageView(container) {
             controller.abort();
             return;
         }
+        // 빈 필수 칸은 생성 요청 전에 그 칸을 짚어 준다
+        const missing = !String($model.val() || '') ? $model : !String($prompt.val() || '').trim() ? $prompt : null;
+        if (missing) {
+            missing.addClass('stng-invalid').trigger('focus');
+            missing[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+            setStatus(missing === $model ? tr('no_model', 'Choose an image model first.') : tr('no_prompt', 'Enter a prompt.'), 'error');
+            return;
+        }
         controller = new AbortController();
         const signal = controller.signal;
         setBusy(true);
-        setStatus(tr('generating', 'Generating… this can take a while.'), 'info');
+        setStatus('');
+        showPending(String($size.val()));
         try {
             current = await createImage({
                 prompt: String($prompt.val()),
@@ -430,9 +482,13 @@ export function mountImageView(container) {
                 size: String($size.val()),
                 negativePrompt: String($negative.val()),
             }, signal);
-            setStatus('');
+            hidePending();
             renderResult();
+            // 결과는 폼 아래에 생기므로 보이게 내려 준다
+            $preview[0].scrollIntoView({ block: 'start', behavior: 'smooth' });
         } catch (error) {
+            hidePending();
+            renderResult();
             if (signal.aborted) {
                 setStatus(tr('stopped', 'Stopped. NanoGPT may still finish the image and charge for it.'), 'info');
             } else {
@@ -454,7 +510,7 @@ export function mountImageView(container) {
         }
     });
 
-    // --- 메시지로 프롬프트: 기준 메시지(기본은 최신)를 골라 그 장면을 프롬프트로
+    // --- 프롬프트 자동생성: 기준 메시지(기본은 최신)를 골라 그 장면을 프롬프트로
     function fillSceneMessages(selectedId = null) {
         const messages = listSceneMessages(selectedId);
         const hasChat = canSendToChat() && messages.length > 0;
@@ -479,7 +535,7 @@ export function mountImageView(container) {
     }
     $sceneMessage.on('change', renderScenePreview);
 
-    /** 진행 중인 [메시지로 프롬프트]의 번호. 취소하면 바뀌어서 늦게 온 결과를 버린다 */
+    /** 진행 중인 [프롬프트 자동생성]의 번호. 취소하면 바뀌어서 늦게 온 결과를 버린다 */
     let sceneRun = 0;
     let sceneBusy = false;
 
@@ -493,7 +549,7 @@ export function mountImageView(container) {
         sceneBusy = busy;
         $scene.toggleClass('stng-busy', busy).attr('title', busy ? tr('scene_cancel', 'Tap again to cancel') : tr('scene_hint', 'Your chat API writes a prompt from the chosen message'));
         $scene.find('i').attr('class', busy ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-feather');
-        $scene.find('span').text(busy ? tr('scene_busy', 'Writing…') : tr('scene', 'Prompt from message'));
+        $scene.find('span').text(busy ? tr('scene_busy', 'Writing…') : tr('scene_run', 'Write'));
         // 드롭다운 상태를 먼저 정해야 버튼 활성 여부를 그걸로 판단할 수 있다
         $sceneMessage.prop('disabled', busy || !canSendToChat());
         $scene.prop('disabled', busy ? false : (!!controller || $sceneMessage.prop('disabled')));
@@ -546,6 +602,7 @@ export function mountImageView(container) {
     activeView = {
         useSceneMessage(messageId, run) {
             if (sceneBusy) return;
+            setAutoOpen(true);
             fillSceneMessages(messageId);
             if (run && !$scene.prop('disabled')) runScene();
         },
@@ -631,6 +688,7 @@ export function mountImageView(container) {
 
     return () => {
         controller?.abort();
+        clearInterval(pendingTimer);
         offUsage();
         activeView = null;
     };

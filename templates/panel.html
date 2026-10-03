@@ -103,19 +103,30 @@
 
             <!-- label 로 감싸면 안의 버튼·드롭다운 탭이 서로 엉키므로 div -->
             <div class="stng-field">
-                <span class="stng-field-label" data-i18n="nanogpt_tools.prompt">Prompt</span>
-                <div class="stng-scene">
-                    <select class="text_pole stng-img-scene-msg" title="Message to draw" data-i18n="[title]nanogpt_tools.scene_message"></select>
-                    <button type="button" class="menu_button stng-btn stng-img-scene">
-                        <i class="fa-solid fa-feather"></i>
-                        <!-- 글자는 image.js 가 넣는다(작성 중 표시를 팝업 번역이 덮어쓰지 않게) --><span></span>
+                <!-- 기본은 직접 쓰기. 자동생성은 제목 옆 버튼으로 펼치는 보조 기능 -->
+                <div class="stng-row stng-spread">
+                    <span class="stng-field-label" data-i18n="nanogpt_tools.prompt">Prompt</span>
+                    <button type="button" class="menu_button stng-btn stng-btn-small stng-auto-toggle" aria-expanded="false">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span data-i18n="nanogpt_tools.scene">Auto-write prompt</span>
+                        <i class="fa-solid fa-chevron-down stng-auto-chevron"></i>
                     </button>
                 </div>
-                <div class="stng-scene-preview" hidden>
-                    <div class="stng-scene-preview-name"></div>
-                    <div class="stng-scene-preview-text"></div>
+                <div class="stng-auto-box" hidden>
+                    <small class="stng-muted" data-i18n="nanogpt_tools.scene_box_hint">Your chat AI reads a message and writes the prompt for you (uses chat tokens).</small>
+                    <div class="stng-scene">
+                        <select class="text_pole stng-img-scene-msg" title="Message to draw" data-i18n="[title]nanogpt_tools.scene_message"></select>
+                        <button type="button" class="menu_button stng-btn stng-img-scene">
+                            <i class="fa-solid fa-feather"></i>
+                            <!-- 글자는 image.js 가 넣는다(작성 중 표시를 팝업 번역이 덮어쓰지 않게) --><span></span>
+                        </button>
+                    </div>
+                    <div class="stng-scene-preview" hidden>
+                        <div class="stng-scene-preview-name"></div>
+                        <div class="stng-scene-preview-text"></div>
+                    </div>
+                    <small class="stng-muted stng-scene-hint" hidden data-i18n="nanogpt_tools.scene_older_hint">For older messages, tap ⚡ in that message's … menu.</small>
                 </div>
-                <small class="stng-muted stng-scene-hint" hidden data-i18n="nanogpt_tools.scene_older_hint">For older messages, tap ⚡ in that message's … menu.</small>
                 <div class="stng-prompt-wrap">
                     <textarea class="text_pole stng-img-prompt" rows="4" placeholder="a cozy cabin in the snow at night, warm light, ..." ></textarea>
                     <div class="stng-prompt-overlay" hidden>
@@ -165,6 +176,11 @@
         </div>
 
         <div class="stng-img-result" hidden>
+            <!-- 생성 중: 고른 크기 비율의 자리 + 지난 시간 -->
+            <div class="stng-img-pending" hidden>
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span></span>
+            </div>
             <img class="stng-img-preview" alt="" />
             <small class="stng-muted stng-img-meta"></small>
             <div class="stng-img-actions">
