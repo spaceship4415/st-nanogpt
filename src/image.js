@@ -6,6 +6,7 @@ import { saveBase64AsFile } from '../../../../utils.js';
 import { fetchImageModels, generateImage, hasNanoGptKey, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
+import { setImageMeta } from './image-meta.js';
 import { getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
@@ -15,9 +16,12 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {string} base64
  * @property {string} prompt
  * @property {string} negativePrompt
+ * @property {string} [promptPrefix] 생성할 때 앞에 붙인 프롬프트
  * @property {string} model
  * @property {number} width
  * @property {number} height
+ * @property {number} [steps]
+ * @property {number} [scale]
  * @property {number} createdAt
  * @property {string|null} savedUrl 채팅에 보내려고 서버에 저장한 경로(같은 이미지를 두 번 올리지 않게)
  */
@@ -49,6 +53,8 @@ export async function createImage({ prompt, model, size, negativePrompt }, signa
 
     const { width, height } = parseSize(size || settings.size);
     const negative = negativePrompt ?? settings.negativePrompt;
+    const steps = Number(settings.steps) || 30;
+    const scale = Number(settings.scale) || 7.5;
     try {
         const base64 = await generateImage({
             model: finalModel,
@@ -56,14 +62,23 @@ export async function createImage({ prompt, model, size, negativePrompt }, signa
             negativePrompt: negative,
             width,
             height,
-            steps: Number(settings.steps) || 30,
-            scale: Number(settings.scale) || 7.5,
+            steps,
+            scale,
         }, signal);
 
         /** @type {GeneratedImage} */
-        const entry = { base64, prompt: prompt.trim(), negativePrompt: negative, model: finalModel, width, height, createdAt: Date.now(), savedUrl: null };
+        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), savedUrl: null };
         sessionImages.unshift(entry);
         sessionImages.length = Math.min(sessionImages.length, MAX_SESSION_IMAGES);
+        if (settings.autoSaveGallery) {
+            // 저장에 실패해도 이미지는 패널에 있으니 생성 자체는 성공으로 둔다
+            try {
+                await saveToGallery(entry);
+            } catch (error) {
+                console.error(LOG_PREFIX, 'failed to save the image to the gallery', error);
+                toastr.warning(tr('gallery_failed', 'The image was made but could not be saved to the gallery.'));
+            }
+        }
         return entry;
     } finally {
         // 실패했어도 과금됐을 수 있으니 사용량은 다시 확인한다
@@ -78,6 +93,41 @@ export function canSendToChat() {
 }
 
 /**
+ * 이미지를 서버 갤러리(data/<사용자>/user/images/<폴더>/)에 저장한다. 이미 저장했으면 그대로 둔다.
+ * 폴더는 지금 채팅 기준: 캐릭터 이름 / 그룹 ID / 채팅이 없으면 'NanoGPT'. ST 의 캐릭터 갤러리에 나온다.
+ * @param {GeneratedImage} entry
+ * @returns {Promise<string>} 저장된 경로
+ */
+export async function saveToGallery(entry) {
+    if (!entry.savedUrl) {
+        const folder = galleryFolder();
+        entry.savedUrl = await saveBase64AsFile(entry.base64, folder, `${folder}_${humanizedDateTime()}`, 'jpg');
+        // 갤러리에서 설정을 다시 볼 수 있게 생성 정보를 남긴다
+        if (entry.model) setImageMeta(entry.savedUrl, metaOf(entry));
+    }
+    return entry.savedUrl;
+}
+
+/**
+ * 갤러리에서 지운 파일을 이번 세션 이미지에서도 '저장 안 됨'으로 되돌린다.
+ * 그래야 그 이미지를 채팅에 보낼 때 없는 경로 대신 다시 저장한다
+ * @param {string} url '/user/images/<폴더>/<파일>'
+ */
+export function forgetSavedImage(url) {
+    for (const entry of sessionImages) {
+        if (entry.savedUrl === url) entry.savedUrl = null;
+    }
+}
+
+/** 지금 채팅의 갤러리 폴더 이름: 캐릭터 이름 / 그룹 ID / 채팅이 없으면 'NanoGPT' */
+export function galleryFolder() {
+    const context = getContext();
+    return context.groupId
+        ? String(context.groupId)
+        : context.characters[context.characterId]?.name || (canSendToChat() ? context.name2 : '') || 'NanoGPT';
+}
+
+/**
  * 이미지를 지금 채팅에 캐릭터 메시지로 붙인다(SD 확장과 같은 형식).
  * @param {GeneratedImage} entry
  * @returns {Promise<string>} 서버에 저장된 이미지 경로
@@ -86,12 +136,7 @@ export async function sendImageToChat(entry) {
     if (!canSendToChat()) throw new Error(tr('no_chat', 'Open a chat first.'));
 
     const context = getContext();
-    if (!entry.savedUrl) {
-        const folder = context.groupId
-            ? String(context.groupId)
-            : context.characters[context.characterId]?.name || context.name2 || 'NanoGPT';
-        entry.savedUrl = await saveBase64AsFile(entry.base64, folder, `${folder}_${humanizedDateTime()}`, 'jpg');
-    }
+    await saveToGallery(entry);
 
     /** @type {import('../../../../constants.js').MediaAttachment} */
     const media = {
@@ -179,7 +224,46 @@ function shouldAutoImport() {
     return !getSettings().sdImported && sd?.source === 'nanogpt' && !!sd.model;
 }
 
-/** 열려 있는 이미지 화면. 메시지 버튼에서 장면 메시지를 바꿀 때 쓴다 @type {{ useSceneMessage: (id: number, run: boolean) => void }|null} */
+/**
+ * @param {GeneratedImage} entry
+ * @returns {import('./image-meta.js').ImageMeta}
+ */
+export function metaOf(entry) {
+    return {
+        model: entry.model,
+        prompt: entry.prompt,
+        promptPrefix: entry.promptPrefix ?? '',
+        negativePrompt: entry.negativePrompt ?? '',
+        width: entry.width,
+        height: entry.height,
+        steps: entry.steps ?? 0,
+        scale: entry.scale ?? 0,
+        createdAt: entry.createdAt,
+    };
+}
+
+/**
+ * 기록된 생성 정보를 이미지 탭 설정으로 불러온다. run 이면 그대로 바로 생성한다.
+ * 이미지 탭이 아직 없으면 마운트될 때 적용한다.
+ * @param {import('./image-meta.js').ImageMeta} meta
+ * @param {boolean} [run]
+ */
+export function applyImageMeta(meta, run = false) {
+    if (meta.model) setSetting('model', meta.model);
+    if (meta.width > 0 && meta.height > 0) setSetting('size', `${meta.width}x${meta.height}`);
+    if (meta.steps > 0) setSetting('steps', meta.steps);
+    if (meta.scale > 0) setSetting('scale', meta.scale);
+    setSetting('promptPrefix', meta.promptPrefix ?? '');
+    setSetting('negativePrompt', meta.negativePrompt ?? '');
+    setSetting('lastPrompt', meta.prompt ?? '');
+    if (activeView) activeView.applySettings(run);
+    else pendingApply = { run };
+}
+
+/** @type {{ run: boolean }|null} */
+let pendingApply = null;
+
+/** 열려 있는 이미지 화면. 메시지 버튼·갤러리에서 값을 넘길 때 쓴다 @type {{ useSceneMessage: (id: number, run: boolean) => void, applySettings: (run: boolean) => void }|null} */
 let activeView = null;
 
 /**
@@ -465,10 +549,23 @@ export function mountImageView(container) {
             fillSceneMessages(messageId);
             if (run && !$scene.prop('disabled')) runScene();
         },
+        applySettings(run) {
+            if (controller || sceneBusy) {
+                toastr.warning(tr('busy_try_later', 'Wait until the current job finishes.'));
+                return;
+            }
+            fillForm();
+            if (run) $generate.trigger('click');
+            else $prompt.trigger('focus');
+        },
     };
     if (pendingScene) {
         activeView.useSceneMessage(pendingScene.messageId, pendingScene.run);
         pendingScene = null;
+    }
+    if (pendingApply) {
+        activeView.applySettings(pendingApply.run);
+        pendingApply = null;
     }
 
     // --- 결과
@@ -476,7 +573,9 @@ export function mountImageView(container) {
         $result.prop('hidden', !current);
         if (current) {
             $preview.attr('src', toDataUrl(current)).attr('alt', current.prompt);
-            $root.find('.stng-img-meta').text(`${current.model} · ${current.width}×${current.height}`);
+            const meta = [current.model, `${current.width}×${current.height}`];
+            if (current.savedUrl) meta.push(tr('saved_in_gallery', 'Saved in gallery'));
+            $root.find('.stng-img-meta').text(meta.join(' · '));
             $send.prop('disabled', !canSendToChat());
         }
         $strip.empty().prop('hidden', sessionImages.length < 2);
@@ -507,11 +606,9 @@ export function mountImageView(container) {
         }
     });
     $root.find('.stng-img-download').on('click', () => current && downloadImage(current));
+    // 이 이미지를 만든 모델·크기·프롬프트·고급 설정을 모두 입력칸으로 불러온다
     $root.find('.stng-img-reuse').on('click', () => {
-        if (!current) return;
-        $prompt.val(current.prompt).trigger('input');
-        $negative.val(current.negativePrompt).trigger('input');
-        $prompt.trigger('focus');
+        if (current) applyImageMeta(metaOf(current));
     });
     $preview.on('click', () => current && window.open(toDataUrl(current), '_blank')?.focus());
 

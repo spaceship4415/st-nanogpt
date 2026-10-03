@@ -76,6 +76,14 @@
                     <span data-i18n="nanogpt_tools.settings_group_image">Image</span>
                 </div>
 
+                <label class="stng-item" for="st_nanogpt_auto_save">
+                    <input id="st_nanogpt_auto_save" type="checkbox" data-setting="autoSaveGallery" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto_save">Save to the gallery right after generating</span>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_save_hint">Kept on the server (user/images, in the current character's folder) even after a reload. When off, images are saved only when sent to the chat.</small>
+                    </span>
+                </label>
+
                 <label class="stng-item" for="st_nanogpt_hidden">
                     <input id="st_nanogpt_hidden" type="checkbox" data-setting="sendHidden" />
                     <span class="stng-item-text">

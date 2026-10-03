@@ -7,6 +7,7 @@ import { hasNanoGptKey, NoKeyError } from './src/api.js';
 import { installBadge, refreshBadge } from './src/badge.js';
 import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, REFRESH_INTERVALS, SIZE_PRESETS } from './src/constants.js';
 import { tr } from './src/i18n.js';
+import { deleteImageMetaFile } from './src/image-meta.js';
 import { createImage, sendImageToChat, useSceneMessage } from './src/image.js';
 import { openPanel } from './src/panel.js';
 import { getSceneProfileId, listSceneProfiles } from './src/scene.js';
@@ -116,10 +117,12 @@ function fillProfileSelect() {
 }
 
 /**
- * 확장을 지울 때 ST 가 부르는 훅(manifest.json 의 hooks.delete). 설정 파일을 지운다.
+ * 확장을 지울 때 ST 가 부르는 훅(manifest.json 의 hooks.delete). 설정 파일과 이미지 생성 정보 파일을 지운다.
+ * 갤러리 이미지 자체는 지우지 않는다(채팅 메시지가 쓰고 있을 수 있다).
  */
 export async function onDelete() {
     await deleteSettingsData();
+    await deleteImageMetaFile();
 }
 
 /** /nanousage 가 돌려주는 한 줄 요약 */
@@ -140,16 +143,16 @@ function summarize(credits) {
 function registerSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'nanogpt',
-        helpString: 'Opens the NanoGPT panel. Optionally pass <code>usage</code> or <code>image</code> to pick the tab.',
+        helpString: 'Opens the NanoGPT panel. Optionally pass <code>usage</code>, <code>image</code> or <code>gallery</code> to pick the tab.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'tab',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumList: ['usage', 'image'],
+                enumList: ['usage', 'image', 'gallery'],
             }),
         ],
         callback: async (_args, tab) => {
-            openPanel(tab === 'image' ? 'image' : tab === 'usage' ? 'usage' : undefined);
+            openPanel(['usage', 'image', 'gallery'].includes(String(tab)) ? /** @type {any} */ (tab) : undefined);
             return '';
         },
     }));

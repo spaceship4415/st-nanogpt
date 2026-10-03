@@ -12,9 +12,72 @@
             <i class="fa-solid fa-image"></i>
             <span data-i18n="nanogpt_tools.tab_image">Image</span>
         </button>
+        <button type="button" class="stng-tab" role="tab" data-tab="gallery">
+            <i class="fa-solid fa-images"></i>
+            <span data-i18n="nanogpt_tools.tab_gallery">Gallery</span>
+        </button>
     </div>
 
     <section class="stng-tab-body" data-tab="usage" role="tabpanel"></section>
+
+    <section class="stng-tab-body stng-gallery" data-tab="gallery" role="tabpanel">
+        <div class="stng-scene">
+            <select class="text_pole stng-gallery-folder" title="Folder" data-i18n="[title]nanogpt_tools.gallery_folder"></select>
+            <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-refresh" title="Refresh" data-i18n="[title]nanogpt_tools.refresh">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+        <small class="stng-muted stng-gallery-count"></small>
+        <div class="stng-notice stng-gallery-empty" hidden>
+            <i class="fa-solid fa-image"></i>
+            <span data-i18n="nanogpt_tools.gallery_empty">No images in this folder yet.</span>
+        </div>
+        <div class="stng-gallery-grid"></div>
+
+        <div class="stng-gallery-viewer" hidden>
+            <img alt="" />
+            <small class="stng-muted stng-gallery-name"></small>
+            <div class="stng-gallery-nav">
+                <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-prev" title="Previous" data-i18n="[title]nanogpt_tools.previous"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="menu_button stng-btn stng-gallery-back">
+                    <i class="fa-solid fa-grip"></i>
+                    <span data-i18n="nanogpt_tools.gallery_back">All images</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-next" title="Next" data-i18n="[title]nanogpt_tools.next"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="stng-gallery-actions">
+                <button type="button" class="menu_button stng-btn stng-gallery-send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span data-i18n="nanogpt_tools.send">To chat</span>
+                </button>
+                <a class="menu_button stng-btn stng-gallery-download" href="#" download>
+                    <i class="fa-solid fa-download"></i>
+                    <span data-i18n="nanogpt_tools.download">Save</span>
+                </a>
+                <button type="button" class="menu_button stng-btn stng-gallery-delete">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span data-i18n="nanogpt_tools.delete">Delete</span>
+                </button>
+            </div>
+
+            <!-- 생성 정보: 이 확장이 기록한 이미지만 있다. 내용은 gallery.js 가 채운다 -->
+            <details class="stng-gallery-info" hidden>
+                <summary></summary>
+                <dl class="stng-meta-list"></dl>
+                <div class="stng-gallery-reuse">
+                    <button type="button" class="menu_button stng-btn stng-gallery-regen">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span data-i18n="nanogpt_tools.regenerate">Generate again</span>
+                    </button>
+                    <button type="button" class="menu_button stng-btn stng-gallery-load">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span data-i18n="nanogpt_tools.load_settings">Load settings</span>
+                    </button>
+                </div>
+            </details>
+            <small class="stng-muted stng-gallery-nometa" hidden data-i18n="nanogpt_tools.gallery_no_meta">No generation info for this image. Only images made with this extension after the info feature was added have it.</small>
+        </div>
+    </section>
 
     <section class="stng-tab-body stng-image" data-tab="image" role="tabpanel">
         <div class="stng-notice stng-img-nokey" hidden>
@@ -115,7 +178,7 @@
                 </button>
                 <button type="button" class="menu_button stng-btn stng-img-reuse">
                     <i class="fa-solid fa-arrow-rotate-left"></i>
-                    <span data-i18n="nanogpt_tools.reuse">Reuse prompt</span>
+                    <span data-i18n="nanogpt_tools.load_settings">Load settings</span>
                 </button>
             </div>
             <div class="stng-img-strip"></div>

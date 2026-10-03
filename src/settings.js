@@ -1,15 +1,13 @@
-import { getRequestHeaders, saveSettingsDebounced } from '../../../../../script.js';
+import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { BADGE_POSITIONS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
  * 설정은 ST 의 settings.json 이 아니라 사용자 파일 폴더의 별도 파일에 둔다
  * (data/<사용자>/user/files/st-nanogpt-settings.json). 확장을 지우면 delete 훅이 이 파일도 지운다.
- * 브라우저 쪽 확장이 서버에 쓸 수 있는 곳은 ST 의 /api/files 가 여는 이 폴더뿐이다.
  */
 
-const FILE_URL = `/user/files/${SETTINGS_FILE}`;
-const FILE_PATH = `user/files/${SETTINGS_FILE}`;
 const SAVE_DELAY = 500;
 
 /** @type {Record<string, any>} */
@@ -30,20 +28,15 @@ export async function loadSettings() {
     let stored = null;
     let movedFromSettingsJson = false;
     try {
-        const response = await fetch(FILE_URL, { cache: 'no-store', headers: getRequestHeaders({ omitContentType: true }) });
-        if (response.ok) {
-            stored = await response.json();
-            writable = true;
-        } else if (response.status === 404) {
+        stored = await readUserFile(SETTINGS_FILE);
+        if (stored === null) {
             const legacy = extension_settings[MODULE_NAME];
             if (legacy && typeof legacy === 'object') {
                 stored = legacy;
                 movedFromSettingsJson = true;
             }
-            writable = true;
-        } else {
-            throw new Error(`HTTP ${response.status}`);
         }
+        writable = true;
     } catch (error) {
         console.warn('[NanoGPT] could not read the settings file; changes will not be saved this session', error);
         stored = extension_settings[MODULE_NAME] ?? null;
@@ -128,34 +121,12 @@ export function setSetting(key, value) {
     }, SAVE_DELAY);
 }
 
-/** @param {string} text */
-function toBase64(text) {
-    const bytes = new TextEncoder().encode(text);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    }
-    return btoa(binary);
-}
-
 /**
  * @param {boolean} [keepalive] 페이지를 떠나는 중에도 요청을 끝까지 보낸다
  * @returns {Promise<boolean>} 저장됐는지
  */
-async function writeFile(keepalive = false) {
-    try {
-        const response = await fetch('/api/files/upload', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ name: SETTINGS_FILE, data: toBase64(JSON.stringify(settings, null, 4)) }),
-            keepalive,
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return true;
-    } catch (error) {
-        console.error('[NanoGPT] could not save the settings file', error);
-        return false;
-    }
+function writeFile(keepalive = false) {
+    return writeUserFile(SETTINGS_FILE, settings, keepalive);
 }
 
 // 저장 대기 중에 새로고침·닫기를 하면 바로 보낸다
@@ -171,15 +142,6 @@ export async function deleteSettingsData() {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = null;
     writable = false;
-    try {
-        const response = await fetch('/api/files/delete', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ path: FILE_PATH }),
-        });
-        if (!response.ok && response.status !== 404) throw new Error(`HTTP ${response.status}`);
-    } catch (error) {
-        console.error('[NanoGPT] could not delete the settings file', error);
-    }
+    await deleteUserFile(SETTINGS_FILE);
     delete extension_settings[MODULE_NAME];
 }

@@ -2,19 +2,22 @@ import { renderExtensionTemplateAsync } from '../../../../extensions.js';
 import { Popup, POPUP_TYPE } from '../../../../popup.js';
 import { EXTENSION_NAME } from './constants.js';
 import { tr } from './i18n.js';
-import { mountImageView } from './image.js';
+import { mountGalleryView } from './gallery.js';
+import { applyImageMeta, mountImageView } from './image.js';
 import { getSettings, setSetting } from './settings.js';
 import { mountUsageView } from './usage.js';
 
 /** 열려 있는 패널. 두 번 열지 않고 탭만 바꾼다 @type {{ popup: Popup, select: (tab: string) => void }|null} */
 let open = null;
 
+const TABS = ['usage', 'image', 'gallery'];
+
 /**
- * NanoGPT 패널(사용량 / 이미지 탭)을 연다.
- * @param {'usage'|'image'} [tab] 생략하면 마지막으로 본 탭
+ * NanoGPT 패널(사용량 / 이미지 / 갤러리 탭)을 연다.
+ * @param {'usage'|'image'|'gallery'} [tab] 생략하면 마지막으로 본 탭
  */
 export async function openPanel(tab) {
-    const initialTab = tab || (getSettings().lastTab === 'image' ? 'image' : 'usage');
+    const initialTab = tab || (TABS.includes(getSettings().lastTab) ? getSettings().lastTab : 'usage');
     if (open) {
         open.select(initialTab);
         return;
@@ -25,6 +28,8 @@ export async function openPanel(tab) {
     /** @type {(() => void)[]} */
     const cleanups = [];
     const mounted = new Set();
+    /** @type {ReturnType<typeof mountGalleryView>|null} */
+    let gallery = null;
 
     /** @param {string} name */
     const select = (name) => {
@@ -40,8 +45,21 @@ export async function openPanel(tab) {
         if (!mounted.has(name)) {
             mounted.add(name);
             const body = $root.find(`.stng-tab-body[data-tab="${name}"]`)[0];
-            cleanups.push(name === 'image' ? mountImageView(body) : mountUsageView(body));
+            if (name === 'gallery') {
+                gallery = mountGalleryView(body, {
+                    // 갤러리에서 고른 이미지의 설정을 이미지 탭으로(바로 생성하거나 고친 뒤 생성)
+                    onUseMeta: (meta, run) => {
+                        applyImageMeta(meta, run);
+                        select('image');
+                    },
+                });
+                cleanups.push(gallery.destroy);
+            } else {
+                cleanups.push(name === 'image' ? mountImageView(body) : mountUsageView(body));
+            }
         }
+        // 갤러리는 볼 때마다 새로 받는다(방금 만든 이미지가 보이게)
+        if (name === 'gallery') gallery?.refresh();
         setSetting('lastTab', name);
     };
     $root.find('.stng-tab').on('click', function () {

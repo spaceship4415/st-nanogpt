@@ -807,3 +807,151 @@ body.stng-no-mes-button .stng_mes_scene {
         font-size: 0.9em;
     }
 }
+
+/* ── 갤러리 탭 ── 휴대폰에서 3칸 격자, 넓은 화면에서 4칸 */
+.stng-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.stng-gallery-thumb {
+    aspect-ratio: 1;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    background-color: var(--black50a);
+    cursor: pointer;
+}
+
+.stng-gallery-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stng-gallery-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stng-gallery-viewer img {
+    display: block;
+    width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background-color: var(--black50a);
+    touch-action: pan-y;
+}
+
+.stng-gallery-name {
+    overflow-wrap: anywhere;
+}
+
+.stng-gallery-nav {
+    display: flex;
+    gap: 6px;
+}
+
+.stng-gallery-nav .stng-gallery-back {
+    flex: 1 1 auto;
+}
+
+.stng-gallery-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+/* 되돌릴 수 없는 동작이라 붉게 */
+.stng-gallery-actions .stng-gallery-delete.menu_button {
+    color: #ff8a80;
+    border-color: color-mix(in srgb, #d9534f 50%, var(--SmartThemeBorderColor));
+}
+
+.stng-gallery-actions .stng-btn.menu_button {
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 4px;
+    white-space: normal;
+    word-break: keep-all;
+    text-align: center;
+    text-decoration: none;
+    font-size: 0.85em;
+    line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+    .stng-gallery-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stng-gallery-actions .stng-btn.menu_button {
+        flex-direction: row;
+        gap: 8px;
+        min-height: 44px;
+        white-space: nowrap;
+        font-size: 0.9em;
+    }
+}
+
+/* 생성 정보: 이름 위·값 아래(휴대폰), 프롬프트는 길어도 다 보이게 */
+.stng-gallery-info {
+    padding: 0 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+}
+
+.stng-gallery-info[open] {
+    padding-bottom: 10px;
+}
+
+.stng-gallery-info > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    overflow: hidden;
+    cursor: pointer;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stng-meta-list {
+    display: grid;
+    gap: 2px;
+    margin: 0 0 10px;
+}
+
+.stng-meta-list dt {
+    margin-top: 6px;
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+
+.stng-meta-list dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    user-select: text;
+}
+
+.stng-gallery-reuse {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.stng-gallery-reuse .stng-btn.menu_button {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    word-break: keep-all;
+    font-size: 0.9em;
+}
