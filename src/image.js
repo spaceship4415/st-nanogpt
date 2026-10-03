@@ -335,6 +335,7 @@ export function metaOf(entry) {
         scale: entry.scale ?? 0,
         createdAt: entry.createdAt,
         chatId: entry.chatId ?? null,
+        source: entry.source ?? null,
     };
 }
 

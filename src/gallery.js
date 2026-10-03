@@ -7,7 +7,7 @@ import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { modelLabel } from './api.js';
 import { filterByChat, getImageMeta, removeImageMeta } from './image-meta.js';
-import { canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
+import { attachTarget, canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
 import { getSettings, setSetting } from './settings.js';
 
 /*
@@ -159,9 +159,30 @@ export function mountGalleryView(container, { onUseMeta }) {
         renderMeta(url);
     }
 
+    /**
+     * 채팅에 보낼 때 쓸 항목. 생성 정보에 만든 메시지가 있으면 함께 넘겨, 설정한 방식대로 그 메시지에 붙게 한다
+     * @returns {import('./image.js').GeneratedImage}
+     */
+    function entryForSend() {
+        const folder = String($folder.val() || '');
+        return {
+            base64: '', prompt: currentMeta?.prompt ?? '', negativePrompt: currentMeta?.negativePrompt ?? '',
+            model: '', width: 0, height: 0, createdAt: Date.now(), source: currentMeta?.source ?? null,
+            // 이미 갤러리에 있는 파일이라 다시 저장하지 않는다. 경로는 ST 가 저장할 때 돌려주는 형식(인코딩 안 함)
+            savedUrl: `/user/images/${folder}/${files[index]}`,
+        };
+    }
+
+    /** [채팅에 보내기] 글자: 원래 메시지에 붙으면 '#12에 붙이기' */
+    function renderSendLabel() {
+        const attach = index >= 0 ? attachTarget(entryForSend()) : null;
+        $send.find('span').text(attach ? tr('attach_to', 'Add to #{0}', attach.messageId) : tr('send', 'To chat'));
+    }
+
     /** @param {string} url */
     async function renderMeta(url) {
         currentMeta = null;
+        renderSendLabel();
         $info.prop('hidden', true);
         $noMeta.prop('hidden', true);
         const meta = await getImageMeta(url);
@@ -172,6 +193,7 @@ export function mountGalleryView(container, { onUseMeta }) {
             return;
         }
         currentMeta = meta;
+        renderSendLabel();
         $info.find('summary').text(`${tr('gallery_info', 'Generation info')} · ${modelLabel(meta.model)} · ${meta.width}×${meta.height}`);
         const $list = $info.find('.stng-meta-list').empty();
         /** @param {string} label @param {string} value */
@@ -265,13 +287,14 @@ export function mountGalleryView(container, { onUseMeta }) {
 
     $send.on('click', async () => {
         if (index < 0) return;
-        const folder = String($folder.val() || '');
         $send.prop('disabled', true);
         try {
-            // 이미 갤러리에 있는 파일이라 다시 저장하지 않고 그 경로로 메시지만 붙인다
-            // 경로는 ST 가 저장할 때 돌려주는 형식(인코딩 안 함)과 맞춘다
-            await sendImageToChat({ base64: '', prompt: '', negativePrompt: '', model: '', width: 0, height: 0, createdAt: Date.now(), savedUrl: `/user/images/${folder}/${files[index]}` });
-            toastr.success(tr('sent', 'Image added to the chat.'));
+            const entry = entryForSend();
+            const attach = attachTarget(entry);
+            await sendImageToChat(entry);
+            toastr.success(attach
+                ? tr('sent_attached', 'Added the image to message #{0}.', attach.messageId)
+                : tr('sent', 'Image added to the chat.'));
         } catch (error) {
             console.error(LOG_PREFIX, 'failed to send gallery image', error);
             toastr.error(error?.message || String(error), tr('send_failed', 'Could not add the image to the chat'));
