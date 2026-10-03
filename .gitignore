@@ -10,3 +10,6 @@ desktop.ini
 
 # Local Claude Code preview config (machine-specific paths)
 .claude/
+
+# Personal example files (style presets etc.), not distributed
+examples/
