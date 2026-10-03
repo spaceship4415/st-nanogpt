@@ -1,6 +1,6 @@
 import { getRequestHeaders } from '../../../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
-import { LOG_PREFIX } from './constants.js';
+import { GALLERY_PAGE, LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
 import { removeInsertsByUrl } from './inserts.js';
 import { onHorizontalSwipe } from './gestures.js';
@@ -78,6 +78,15 @@ export function mountGalleryView(container, { onUseMeta }) {
     let loadToken = 0;
     /** 서버에 실제로 있는 폴더 @type {Set<string>} */
     let existingFolders = new Set();
+    /** 격자에 그린 장 수(나눠서 그린다) */
+    let rendered = 0;
+    /** 여러 장 고르기 */
+    let selecting = false;
+    /** @type {Set<string>} 고른 파일 이름 */
+    const selected = new Set();
+    const $more = $root.find('.stng-gallery-more');
+    const $selectToggle = $root.find('.stng-gallery-select-toggle');
+    const $selectBar = $root.find('.stng-gallery-selectbar');
 
     // --- 보기 범위: '이 채팅'은 지금 채팅에서 만든 것만(생성 정보에 채팅이 기록된 이미지), '폴더 전체'는 다
     const chatId = getContext().getCurrentChatId?.() || null;
@@ -138,11 +147,119 @@ export function mountGalleryView(container, { onUseMeta }) {
             ? tr('gallery_empty_chat', 'No images made in this chat yet. Images made before this view was added, or with the Image Generation extension, show up under Whole folder.')
             : tr('gallery_empty', 'No images in this folder yet.'));
         $empty.prop('hidden', files.length > 0);
-        $grid.append(files.map((file, i) => $('<button type="button" class="stng-gallery-thumb"></button>')
-            .attr('title', file)
-            .append($('<img alt="" loading="lazy" decoding="async">').attr('src', imageUrl(folder, file)))
-            .on('click', () => openViewer(i))));
+        rendered = 0;
+        setSelecting(false);
+        renderMore();
     }
+
+    /** 다음 몇 장을 격자에 더 그린다 */
+    function renderMore() {
+        const folder = String($folder.val() || '');
+        const next = files.slice(rendered, rendered + GALLERY_PAGE);
+        $grid.append(next.map(file => $('<button type="button" class="stng-gallery-thumb"></button>')
+            .attr('title', file)
+            .attr('data-file', file)
+            .toggleClass('stng-selected', selected.has(file))
+            .append($('<img alt="" loading="lazy" decoding="async">').attr('src', imageUrl(folder, file)))
+            .on('click', () => (selecting ? toggleSelected(file) : openViewer(files.indexOf(file))))));
+        rendered += next.length;
+        renderMoreButton();
+        renderSelection();
+    }
+
+    function renderMoreButton() {
+        $more.prop('hidden', rendered >= files.length)
+            .text(tr('gallery_more', 'Show more ({0} / {1})', rendered, files.length));
+        $selectToggle.prop('hidden', !files.length);
+    }
+
+    /** 고르기 켜기/끄기 */
+    function setSelecting(on) {
+        selecting = on;
+        selected.clear();
+        $grid.find('.stng-gallery-thumb').removeClass('stng-selected');
+        $grid.toggleClass('stng-selecting', on);
+        $selectToggle.find('span').text(on ? tr('cancel', 'Cancel') : tr('gallery_select', 'Select'));
+        $selectToggle.toggleClass('stng-active', on);
+        renderSelection();
+    }
+
+    /** @param {string} file */
+    function toggleSelected(file) {
+        if (selected.has(file)) selected.delete(file);
+        else selected.add(file);
+        $grid.find('.stng-gallery-thumb').filter((_, el) => el.dataset.file === file).toggleClass('stng-selected', selected.has(file));
+        renderSelection();
+    }
+
+    function renderSelection() {
+        $selectBar.prop('hidden', !selecting);
+        $selectBar.find('.stng-gallery-selected').text(tr('gallery_selected', '{0} selected', selected.size));
+        const shown = files.slice(0, rendered);
+        const allShown = shown.length > 0 && shown.every(file => selected.has(file));
+        $selectBar.find('.stng-gallery-select-all').text(allShown ? tr('gallery_select_none', 'Select none') : tr('gallery_select_all', 'Select shown'));
+        $selectBar.find('.stng-gallery-bulk-delete span').text(tr('delete', 'Delete'));
+        $selectBar.find('.stng-gallery-bulk-delete').prop('disabled', !selected.size);
+    }
+
+    $more.on('click', renderMore);
+    $selectToggle.on('click', () => setSelecting(!selecting));
+    $selectBar.find('.stng-gallery-select-all').on('click', () => {
+        const shown = files.slice(0, rendered);
+        const allShown = shown.every(file => selected.has(file));
+        for (const file of shown) {
+            if (allShown) selected.delete(file);
+            else selected.add(file);
+        }
+        $grid.find('.stng-gallery-thumb').each((_, el) => {
+            $(el).toggleClass('stng-selected', selected.has(String(el.dataset.file)));
+        });
+        renderSelection();
+    });
+
+    /**
+     * 갤러리 파일 하나를 서버에서 지우고, 이 확장의 기록(생성 정보·메시지 아래 그림)도 정리한다
+     * @param {string} folder
+     * @param {string} file
+     */
+    async function deleteFile(folder, file) {
+        const path = `user/images/${folder}/${file}`;
+        const response = await fetch('/api/images/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        forgetSavedImage(`/${path}`);
+        removeImageMeta(path);
+        await removeInsertsByUrl(`/${path}`);
+    }
+
+    $selectBar.find('.stng-gallery-bulk-delete').on('click', async () => {
+        if (!selected.size) return;
+        const folder = String($folder.val() || '');
+        const targets = [...selected];
+        const message = $('<div></div>')
+            .append($('<p></p>').text(tr('gallery_bulk_delete_confirm', 'Delete {0} images from the server?', targets.length)))
+            .append($('<p class="stng-muted"></p>').text(tr('gallery_delete_warning', 'This cannot be undone. If it is shown under a message, it is removed there too; if it was attached to a message or sent to the end of the chat, it will show as broken there.')));
+        const result = await callGenericPopup(message, POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
+        if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+
+        const $button = $selectBar.find('.stng-gallery-bulk-delete').prop('disabled', true);
+        let failed = 0;
+        for (const [i, file] of targets.entries()) {
+            $button.find('span').text(tr('gallery_deleting', 'Deleting… {0} / {1}', i + 1, targets.length));
+            try {
+                await deleteFile(folder, file);
+            } catch (error) {
+                failed++;
+                console.error(LOG_PREFIX, 'failed to delete gallery image', file, error);
+            }
+        }
+        if (failed) toastr.warning(tr('gallery_bulk_delete_partial', 'Deleted {0}, {1} failed.', targets.length - failed, failed));
+        else toastr.success(tr('gallery_bulk_deleted', 'Deleted {0} images.', targets.length));
+        await loadImages();
+    });
 
     /** @param {number} i */
     function openViewer(i) {
@@ -250,18 +367,11 @@ export function mountGalleryView(container, { onUseMeta }) {
 
         $delete.prop('disabled', true);
         try {
-            const path = `user/images/${folder}/${file}`;
-            const response = await fetch('/api/images/delete', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ path }),
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            forgetSavedImage(`/${path}`);
-            removeImageMeta(path);
-            removeInsertsByUrl(`/${path}`);
+            await deleteFile(folder, file);
             files.splice(index, 1);
-            $grid.children().eq(index).remove();
+            $grid.find('.stng-gallery-thumb').filter((_, el) => el.dataset.file === file).remove();
+            if (index < rendered) rendered--;
+            renderMoreButton();
             $count.text(scope() === 'chat' ? tr('gallery_count_chat', '{0} images from this chat', files.length) : tr('gallery_count', '{0} images', files.length));
             $empty.prop('hidden', files.length > 0);
             // 지운 자리의 다음 이미지를 보여 주고, 다 지웠으면 목록으로

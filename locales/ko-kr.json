@@ -186,5 +186,14 @@
     "nanogpt_tools.no_message": "그 메시지가 더 이상 없습니다.",
     "nanogpt_tools.chat_changed": "이미지를 만드는 사이 채팅이 바뀌어 채팅에 넣지 않았습니다. 갤러리에 있습니다.",
     "nanogpt_tools.scene_hidden_message": "숨김 메시지는 그릴 수 없습니다.",
-    "nanogpt_tools.scene_profile_failed": "연결 프로필 요청이 실패했습니다: {0}"
+    "nanogpt_tools.scene_profile_failed": "연결 프로필 요청이 실패했습니다: {0}",
+    "nanogpt_tools.gallery_more": "더 보기 ({0} / {1})",
+    "nanogpt_tools.gallery_select": "선택",
+    "nanogpt_tools.gallery_selected": "{0}장 선택",
+    "nanogpt_tools.gallery_select_all": "보이는 것 모두",
+    "nanogpt_tools.gallery_select_none": "모두 해제",
+    "nanogpt_tools.gallery_bulk_delete_confirm": "이미지 {0}장을 서버에서 삭제할까요?",
+    "nanogpt_tools.gallery_deleting": "삭제 중… {0} / {1}",
+    "nanogpt_tools.gallery_bulk_delete_partial": "{0}장 삭제, {1}장 실패했습니다.",
+    "nanogpt_tools.gallery_bulk_deleted": "이미지 {0}장을 삭제했습니다."
 }

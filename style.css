@@ -1248,3 +1248,79 @@ body.stng-no-mes-button .stng_mes_scene {
 .mes[is_system="true"] .stng_mes_scene {
     display: none !important;
 }
+
+/* 갤러리: 더 보기, 여러 장 고르기 */
+.stng-gallery-bar {
+    min-height: 36px;
+}
+
+.stng-gallery-select-toggle.stng-active {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-gallery-more.menu_button {
+    width: 100%;
+}
+
+.stng-gallery-thumb {
+    position: relative;
+}
+
+/* 고르는 중: 모든 칸에 빈 동그라미, 고른 칸은 강조 테두리 + 체크 */
+.stng-gallery-grid.stng-selecting .stng-gallery-thumb::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
+}
+
+.stng-gallery-grid.stng-selecting .stng-gallery-thumb.stng-selected {
+    outline: 3px solid var(--SmartThemeQuoteColor);
+    outline-offset: -3px;
+}
+
+.stng-gallery-grid.stng-selecting .stng-gallery-thumb.stng-selected::after {
+    content: '\f00c';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-color: var(--SmartThemeQuoteColor);
+    color: #fff;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 12px;
+    background-color: var(--SmartThemeQuoteColor);
+}
+
+.stng-gallery-grid.stng-selecting .stng-gallery-thumb:not(.stng-selected) img {
+    opacity: 0.75;
+}
+
+.stng-gallery-selectbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 -4px;
+    padding: 8px 4px 6px;
+    background-color: var(--SmartThemeBlurTintColor);
+    box-shadow: 0 -8px 12px -8px var(--black50a);
+}
+
+.stng-gallery-selected {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: bold;
+}
+
+.stng-gallery-bulk-delete.menu_button {
+    color: #ff8a80;
+}

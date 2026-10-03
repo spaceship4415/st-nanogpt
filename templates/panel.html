@@ -38,12 +38,30 @@
                 <i class="fa-solid fa-rotate"></i>
             </button>
         </div>
-        <small class="stng-muted stng-gallery-count"></small>
+        <div class="stng-row stng-spread stng-gallery-bar">
+            <small class="stng-muted stng-gallery-count"></small>
+            <!-- 여러 장 골라 지우기. 글자는 gallery.js 가 넣는다 -->
+            <button type="button" class="menu_button stng-btn stng-btn-small stng-gallery-select-toggle" hidden>
+                <i class="fa-regular fa-square-check"></i>
+                <span></span>
+            </button>
+        </div>
         <div class="stng-notice stng-gallery-empty" hidden>
             <i class="fa-solid fa-image"></i>
             <!-- 글자는 gallery.js 가 보기 범위에 맞춰 넣는다 --><span></span>
         </div>
         <div class="stng-gallery-grid"></div>
+        <!-- 한 번에 다 그리지 않고 나눠서(많아도 열 때 가볍게). 글자는 gallery.js 가 넣는다 -->
+        <button type="button" class="menu_button stng-btn stng-gallery-more" hidden></button>
+        <!-- 고르는 중: 아래에 붙어 있는 막대 -->
+        <div class="stng-gallery-selectbar" hidden>
+            <span class="stng-gallery-selected"></span>
+            <button type="button" class="menu_button stng-btn stng-btn-small stng-gallery-select-all"></button>
+            <button type="button" class="menu_button stng-btn stng-btn-small stng-gallery-bulk-delete">
+                <i class="fa-solid fa-trash-can"></i>
+                <span></span>
+            </button>
+        </div>
 
         <div class="stng-gallery-viewer" hidden>
             <img alt="" data-swipe-ignore="true" />

@@ -8,6 +8,8 @@ export const IMAGE_META_FILE = 'st-nanogpt-images.json';
 
 /** 메시지별로 써 둔 프롬프트 기록 파일(같은 폴더) */
 export const SCENE_PROMPTS_FILE = 'st-nanogpt-prompts.json';
+/** 갤러리 격자에 한 번에 그릴 장 수([더 보기]로 더) */
+export const GALLERY_PAGE = 30;
 /** 메시지 아래 화면에만 끼워 넣은 그림 기록 파일(같은 폴더) */
 export const INSERTS_FILE = 'st-nanogpt-inserts.json';
 /** 메시지에서 만든 그림을 채팅에 보내는 방식: 화면에만 / 원래 메시지에 첨부 / 맨 아래 숨김 메시지 */
