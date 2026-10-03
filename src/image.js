@@ -1155,6 +1155,18 @@ export function mountImageView(container) {
         useSceneMessage(messageId, run) {
             if (sceneBusy) return;
             setAutoOpen(true);
+            // ⚡로 들어오면 결과 그림이 아니라 프롬프트 쪽을 보여 준다(쓰는 중 표시·확인·고치기가 바로 보이게).
+            // 패널이 막 열리는 중이면(아직 화면에 없거나 여는 애니메이션 중) 스크롤이 무시되므로 끝날 때까지 기다린다
+            const field = $autoToggle.closest('.stng-field')[0];
+            const scrollWhenOpen = (tries) => {
+                if (!field) return;
+                if (!field.isConnected || field.closest('dialog')?.hasAttribute('opening')) {
+                    if (tries > 0) setTimeout(() => scrollWhenOpen(tries - 1), 50);
+                    return;
+                }
+                field.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            };
+            scrollWhenOpen(40);
             // 숨김·빈 메시지는 그릴 대상이 아니다(조용히 '최신 메시지'로 바뀌어 작성되지 않게 알리고 멈춘다)
             if (!isPortraitScene(messageId) && !getScenePreview(messageId)) {
                 fillSceneMessages();
