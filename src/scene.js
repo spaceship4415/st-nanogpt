@@ -140,6 +140,16 @@ function characterDescriptions() {
 }
 
 /**
+ * 그림에 붙을 공통 접두사(=고른 스타일)를 참고로 알려 주는 단락.
+ * 채팅 AI 가 그 화풍에 맞는 구도·거리를 고르게 하되(예: 옆에서 본 게임 화면이면 멀리서), 화풍 단어는 따라 쓰지 않게 한다
+ */
+function styleNote() {
+    const prefix = String(getSettings().promptPrefix ?? '').trim();
+    if (!prefix) return null;
+    return `[Image style]\nThe image will be drawn with this style prefix added in front of your prompt:\n${prefix}\nChoose a camera angle, distance and composition that suit this style. Do not repeat these style words in your output.`;
+}
+
+/**
  * 채팅 API 로 보낼 본문을 만든다.
  * @param {number} messageId 장면으로 삼을 메시지
  */
@@ -156,6 +166,8 @@ function buildScenePrompt(messageId) {
         const parts = characters.map(c => `[Character: ${c.name}]\n${c.description}`);
         if (persona) parts.push(`[User: ${context.name1}]\n${persona}`);
         const subjects = [...characters.map(c => c.name), ...(persona ? [context.name1] : [])];
+        const style = styleNote();
+        if (style) parts.push(style);
         parts.push(subjects.length > 1
             ? `[Scene to illustrate]\nA portrait of ${subjects.join(' and ')} together as described above, showing each one's appearance and clothing.`
             : `[Scene to illustrate]\nA portrait of ${subjects[0]} as described above, showing appearance and clothing.`);
@@ -182,6 +194,8 @@ function buildScenePrompt(messageId) {
     }
     if (before.length) parts.push(`[Story so far]\n${before.join('\n\n')}`);
 
+    const style = styleNote();
+    if (style) parts.push(style);
     parts.push(`[Scene to illustrate]\n${target.name}: ${plain(target.mes)}`);
     // 안 알려 주면 장면 속에 있어도 캐릭터만 그리는 일이 많다
     if (persona) parts.push(`If ${context.name1} is present in this moment, include ${context.name1} with their appearance from [User: ${context.name1}].`);
@@ -304,13 +318,22 @@ export function messageFingerprint(messageId) {
 /** @typedef {{ key: string, temp: boolean }} ScenePromptLink 메시지 하나의 프롬프트 기록 자리 */
 
 /**
+ * 기록 키에 붙는 스타일 지문. 스타일(공통 접두사)마다 구도가 달라지므로 따로 기억한다.
+ * 접두사가 비어 있으면 '' 라 예전 기록 키와 같다
+ */
+function styleKey() {
+    const prefix = String(getSettings().promptPrefix ?? '').trim();
+    return prefix ? `|s${fingerprint(prefix)}` : '';
+}
+
+/**
  * @param {ChatMessage|undefined} message
  * @returns {ScenePromptLink|null}
  */
 function scenePromptKey(message) {
     if (!message) return null;
     const chatId = getContext().getCurrentChatId?.();
-    const id = `${fingerprint(String(message.name ?? ''))}|${fingerprint(String(message.mes ?? ''))}`;
+    const id = `${fingerprint(String(message.name ?? ''))}|${fingerprint(String(message.mes ?? ''))}${styleKey()}`;
     return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
 }
 
@@ -349,7 +372,7 @@ export function scenePromptLinkFor(messageId) {
         const chatId = context.getCurrentChatId?.();
         const source = characters.map(c => `${c.name}\n${c.description}`).join('\n') + (persona ? `\n${context.name1}\n${persona}` : '');
         const kind = { [CHARACTER_SCENE]: 'char', [PERSONA_SCENE]: 'persona', [BOTH_SCENE]: 'both' }[messageId];
-        const id = `${kind}|${fingerprint(source)}`;
+        const id = `${kind}|${fingerprint(source)}${styleKey()}`;
         return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
     }
     return scenePromptKey(getContext().chat?.[messageId]);

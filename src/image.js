@@ -1040,6 +1040,7 @@ export function mountImageView(container) {
         $prompt.val(remembered).trigger('input').removeClass('stng-invalid');
         sceneLink = scenePromptLinkFor(selectedSceneId());
         sceneSourceId = selectedSceneId() >= 0 ? selectedSceneId() : null;
+        markSceneLinked();
         renderScenePreview(true);
     });
     // 메시지를 고르면, 칸이 비었거나 다른 메시지의 자동생성 결과일 때만 그 메시지로 기억한 프롬프트를 바로 채운다.
@@ -1054,6 +1055,7 @@ export function mountImageView(container) {
             $prompt.val(remembered).removeClass('stng-invalid');
             sceneLink = scenePromptLinkFor(id);
             sceneSourceId = id >= 0 ? id : null;
+            markSceneLinked();
             renderScenePreview(true);
         } else {
             // 칸에 있던 건 다른 메시지의 자동생성 결과였으니, 기억이 없는 메시지를 고르면 비운다
@@ -1071,11 +1073,34 @@ export function mountImageView(container) {
     let sceneLink = null;
     /** 그 메시지 번호('캐릭터 설정만'이면 null). 생성한 이미지를 채팅에 보낼 때 이 메시지에 붙인다 @type {number|null} */
     let sceneSourceId = null;
+    /** 그 프롬프트를 쓰거나 불러올 때의 스타일(공통 접두사). 바뀌면 [새로 작성]을 권한다 */
+    let sceneLinkStyle = '';
+    const currentStyle = () => String(settings.promptPrefix ?? '').trim();
+    /** 자동생성 프롬프트로 칸을 채운 직후 부른다 */
+    const markSceneLinked = () => {
+        sceneLinkStyle = currentStyle();
+        renderStyleStale();
+    };
     $prompt.on('input', () => {
         if (!String($prompt.val()).trim()) {
             sceneLink = null;
             sceneSourceId = null;
         }
+        renderStyleStale();
+    });
+
+    // 자동생성한 뒤 스타일을 바꿨으면 알려 준다(새로 쓰면 그 스타일에 맞는 구도로 쓴다). 토큰이 드니 자동으로 다시 쓰지는 않는다
+    const $styleStale = $root.find('.stng-style-stale');
+    function renderStyleStale() {
+        $styleStale.prop('hidden', !sceneLink || sceneBusy || sceneLinkStyle === currentStyle());
+    }
+    $prefix.on('input', renderStyleStale);
+    $style.on('change', renderStyleStale);
+    $styleStale.find('.stng-style-rewrite').on('click', () => {
+        if (sceneBusy) return;
+        // 그 프롬프트를 쓴 메시지(설명으로 그리기면 드롭다운에 고른 그대로)로 다시 쓴다
+        if (sceneSourceId !== null) fillSceneMessages(sceneSourceId);
+        runScene();
     });
 
     /** 진행 중인 [프롬프트 자동생성]의 번호. 취소하면 바뀌어서 늦게 온 결과를 버린다 */
@@ -1107,6 +1132,7 @@ export function mountImageView(container) {
         $generate.prop('disabled', busy);
         // 끝나면 버튼 글자([작성]/[새로 작성])와 기록 안내를 다시 맞춘다
         if (!busy) renderScenePreview();
+        renderStyleStale();
     }
 
     /** @type {AbortController|null} */
@@ -1134,6 +1160,7 @@ export function mountImageView(container) {
                 $prompt.val(prompt).trigger('input');
                 sceneLink = link;
                 sceneSourceId = messageId >= 0 ? messageId : null;
+                markSceneLinked();
             } else {
                 toastr.warning(tr('scene_empty', 'The model returned nothing.'));
             }
@@ -1167,6 +1194,7 @@ export function mountImageView(container) {
                 $prompt.val(remembered).trigger('input').removeClass('stng-invalid');
                 sceneLink = scenePromptLinkFor(messageId);
                 sceneSourceId = messageId;
+                markSceneLinked();
                 renderScenePreview(true);
             } else {
                 runScene();

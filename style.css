@@ -1404,6 +1404,31 @@ body.stng-no-mes-button .stng_mes_scene {
     inset: -4px 0;
 }
 
+/* 자동생성 뒤 스타일이 바뀌었을 때 안내 */
+.stng-style-stale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    line-height: 1.35;
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 14%, transparent);
+}
+
+.stng-style-stale > i {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-style-stale > span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.stng-style-stale .stng-btn {
+    flex-shrink: 0;
+}
+
 /* 이 메시지로 전에 쓴 프롬프트 안내 */
 .stng-scene-cached {
     display: flex;
