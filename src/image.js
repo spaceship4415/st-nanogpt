@@ -8,7 +8,7 @@ import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
 import { openLightbox } from './lightbox.js';
 import { setImageMeta } from './image-meta.js';
-import { getRememberedPromptAt, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
+import { CHARACTER_SCENE, getRememberedPromptAt, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -30,6 +30,16 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
 
 /** 이번 세션에서 만든 이미지(최근 것이 앞). 새로고침하면 사라진다 @type {GeneratedImage[]} */
 const sessionImages = [];
+
+/**
+ * 이미지 탭의 결과·썸네일에 보여 줄 것: 지금 채팅에서 만든 것만(다른 채팅 것은 갤러리 탭에서).
+ * 채팅이 없을 때 만든 것은 채팅이 없을 때만 보인다
+ * @returns {GeneratedImage[]}
+ */
+function imagesForThisChat() {
+    const chatId = getContext().getCurrentChatId?.() || '';
+    return sessionImages.filter(entry => (entry.chatId || '') === chatId);
+}
 
 /** @param {string} size '1024x1024' */
 function parseSize(size) {
@@ -273,15 +283,14 @@ export function applyImageMeta(meta, run = false) {
     if (meta.scale > 0) setSetting('scale', meta.scale);
     setSetting('promptPrefix', meta.promptPrefix ?? '');
     setSetting('negativePrompt', meta.negativePrompt ?? '');
-    setSetting('lastPrompt', meta.prompt ?? '');
-    if (activeView) activeView.applySettings(run);
-    else pendingApply = { run };
+    if (activeView) activeView.applySettings(run, meta.prompt ?? '');
+    else pendingApply = { run, prompt: meta.prompt ?? '' };
 }
 
-/** @type {{ run: boolean }|null} */
+/** @type {{ run: boolean, prompt: string }|null} */
 let pendingApply = null;
 
-/** 열려 있는 이미지 화면. 메시지 버튼·갤러리에서 값을 넘길 때 쓴다 @type {{ useSceneMessage: (id: number, run: boolean) => void, applySettings: (run: boolean) => void }|null} */
+/** 열려 있는 이미지 화면. 메시지 버튼·갤러리에서 값을 넘길 때 쓴다 @type {{ useSceneMessage: (id: number, run: boolean) => void, applySettings: (run: boolean, prompt: string) => void }|null} */
 let activeView = null;
 
 /**
@@ -371,7 +380,7 @@ export function mountImageView(container) {
     /** @type {AbortController|null} */
     let controller = null;
     /** @type {GeneratedImage|null} */
-    let current = sessionImages[0] ?? null;
+    let current = imagesForThisChat()[0] ?? null;
 
     if (!hasNanoGptKey()) {
         $root.find('.stng-img-form').prop('hidden', true);
@@ -386,14 +395,18 @@ export function mountImageView(container) {
         setSetting('sdImported', true);
     }
 
-    /** 설정값을 입력칸에 채운다(처음, 그리고 '가져오기' 뒤) */
-    function fillForm() {
+    /**
+     * 설정값을 입력칸에 채운다(처음, '가져오기'·'설정 불러오기' 뒤).
+     * 프롬프트는 기억하지 않는다: 열 때는 빈칸, 주어졌을 때만 채우고, 생략하면 지금 내용을 둔다
+     * @param {string} [promptText]
+     */
+    function fillForm(promptText) {
         $size.empty().append(SIZE_PRESETS.map(p => new Option(`${tr(p.label, p.english)} (${p.value.replace('x', '×')})`, p.value)));
         if (!SIZE_PRESETS.some(p => p.value === settings.size)) {
             $size.append(new Option(settings.size.replace('x', '×'), settings.size));
         }
         $size.val(settings.size);
-        $prompt.val(settings.lastPrompt);
+        if (promptText !== undefined) $prompt.val(promptText);
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
         $steps.val(settings.steps);
@@ -405,13 +418,12 @@ export function mountImageView(container) {
     }
 
     $size.on('change', () => setSetting('size', String($size.val())));
-    $prompt.on('input', () => setSetting('lastPrompt', String($prompt.val())));
     $prefix.on('input', () => setSetting('promptPrefix', String($prefix.val())));
     $negative.on('input', () => setSetting('negativePrompt', String($negative.val())));
     $steps.on('change', () => setSetting('steps', Math.max(1, Math.min(150, Number($steps.val()) || 30))));
     $scale.on('change', () => setSetting('scale', Math.max(0, Math.min(30, Number($scale.val()) || 7.5))));
     $model.on('change', () => setSetting('model', String($model.val())));
-    fillForm();
+    fillForm('');
 
     $root.find('.stng-img-import').on('click', () => {
         try {
@@ -549,10 +561,13 @@ export function mountImageView(container) {
     // --- 프롬프트 자동생성: 기준 메시지(기본은 최신)를 골라 그 장면을 프롬프트로
     function fillSceneMessages(selectedId = null) {
         const messages = listSceneMessages(selectedId);
-        const hasChat = canSendToChat() && messages.length > 0;
+        // 메시지가 없어도 '캐릭터 설정만'은 쓸 수 있으니 채팅만 열려 있으면 된다
+        const hasChat = canSendToChat();
         $sceneMessage.empty().append(new Option(tr('scene_latest', 'Latest message'), 'last'));
+        $sceneMessage.append(new Option(tr('scene_character', 'Character only (no message)'), 'char'));
         $sceneMessage.append(messages.map(m => new Option(m.label, String(m.id))));
-        $sceneMessage.val(selectedId !== null && messages.some(m => m.id === selectedId) ? String(selectedId) : 'last');
+        $sceneMessage.val(selectedId === CHARACTER_SCENE ? 'char'
+            : selectedId !== null && messages.some(m => m.id === selectedId) ? String(selectedId) : 'last');
         $sceneMessage.prop('disabled', !hasChat);
         $scene.prop('disabled', !hasChat || !!controller);
         $sceneHint.prop('hidden', !hasChat || !getSettings().messageButton);
@@ -565,6 +580,7 @@ export function mountImageView(container) {
     /** 드롭다운에서 고른 메시지 번호('최신'이면 실제 번호) */
     function selectedSceneId() {
         const value = String($sceneMessage.val() ?? 'last');
+        if (value === 'char') return CHARACTER_SCENE;
         return value === 'last' ? lastSceneMessageId() : Number(value);
     }
 
@@ -578,16 +594,21 @@ export function mountImageView(container) {
         const preview = $sceneMessage.prop('disabled') ? null : getScenePreview(id);
         $scenePreview.prop('hidden', !preview);
         if (preview) {
-            $scenePreview.find('.stng-scene-preview-name').text(`#${preview.id} ${preview.name}`);
-            $scenePreview.find('.stng-scene-preview-text').text(preview.text);
+            const isCharacter = preview.id === CHARACTER_SCENE;
+            $scenePreview.find('.stng-scene-preview-name').text(isCharacter
+                ? tr('scene_character_preview', 'Character: {0}', preview.name)
+                : `#${preview.id} ${preview.name}`);
+            // 캐릭터 설정만: 내용 대신 함께 보낼 페르소나 이름만(안 보내면 줄을 숨김)
+            const text = isCharacter ? (preview.persona ? tr('scene_persona_preview', 'Persona: {0}', preview.persona) : '') : preview.text;
+            $scenePreview.find('.stng-scene-preview-text').text(text).prop('hidden', !text);
         }
         const remembered = preview ? getRememberedScenePrompt(id) : null;
         // 이미 프롬프트 칸에 그 내용이 있으면(방금 쓴 경우 등) 불러오기 안내는 필요 없다
         const alreadyIn = !!remembered && !justLoaded && String($prompt.val()) === remembered;
         $sceneCached.prop('hidden', !remembered || alreadyIn);
         $sceneCached.find('> span').text(justLoaded
-            ? tr('scene_cached_loaded', 'Loaded the prompt written for this message before.')
-            : tr('scene_cached', 'A prompt was written for this message before.'));
+            ? tr('scene_cached_loaded', 'Loaded the prompt written before.')
+            : tr('scene_cached', 'A prompt was written before.'));
         $sceneCached.find('.stng-scene-load').prop('hidden', justLoaded);
         if (!sceneBusy) $scene.find('span').text(remembered ? tr('scene_rerun', 'Write again') : tr('scene_run', 'Write'));
     }
@@ -598,9 +619,22 @@ export function mountImageView(container) {
         sceneLink = scenePromptLinkFor(selectedSceneId());
         renderScenePreview(true);
     });
+    // 메시지를 고르면, 칸이 비었거나 다른 메시지의 자동생성 결과일 때만 그 메시지로 기억한 프롬프트를 바로 채운다.
+    // 직접 쓴 내용이 있으면 덮어쓰지 않고 [불러오기]만 보여 준다
     $sceneMessage.on('change', () => {
+        const wasLinked = !!sceneLink;
         sceneLink = null;
-        renderScenePreview();
+        const id = selectedSceneId();
+        const remembered = getRememberedScenePrompt(id);
+        if (remembered && (wasLinked || !String($prompt.val()).trim())) {
+            $prompt.val(remembered).removeClass('stng-invalid');
+            sceneLink = scenePromptLinkFor(id);
+            renderScenePreview(true);
+        } else {
+            // 칸에 있던 건 다른 메시지의 자동생성 결과였으니, 기억이 없는 메시지를 고르면 비운다
+            if (wasLinked) $prompt.val('');
+            renderScenePreview();
+        }
     });
 
     /**
@@ -634,7 +668,11 @@ export function mountImageView(container) {
         $scene.prop('disabled', busy ? false : (!!controller || $sceneMessage.prop('disabled')));
         $prompt.prop('readonly', busy);
         $promptOverlay.prop('hidden', !busy);
-        if (busy) $promptOverlay.find('span').text(tr('scene_working', 'Writing a prompt from message #{0}…\nTap the button again to cancel.', messageId));
+        if (busy) {
+            $promptOverlay.find('span').text(messageId === CHARACTER_SCENE
+                ? tr('scene_working_character', 'Writing a prompt from the character description…\nTap the button again to cancel.')
+                : tr('scene_working', 'Writing a prompt from message #{0}…\nTap the button again to cancel.', messageId));
+        }
         // 작성 중에 옛 프롬프트로 생성되지 않게
         $generate.prop('disabled', busy);
         // 끝나면 버튼 글자([작성]/[새로 작성])와 기록 안내를 다시 맞춘다
@@ -654,8 +692,7 @@ export function mountImageView(container) {
             toastr.info(tr('scene_cancelled', 'Stopped writing the prompt.'));
             return;
         }
-        const value = String($sceneMessage.val());
-        const messageId = value === 'last' ? lastSceneMessageId() : Number(value);
+        const messageId = selectedSceneId();
         const run = ++sceneRun;
         sceneAbort = new AbortController();
         setStatus('');
@@ -697,13 +734,13 @@ export function mountImageView(container) {
                 runScene();
             }
         },
-        applySettings(run) {
+        applySettings(run, prompt) {
             if (controller || sceneBusy) {
                 toastr.warning(tr('busy_try_later', 'Wait until the current job finishes.'));
                 return;
             }
             sceneLink = null;
-            fillForm();
+            fillForm(prompt);
             if (run) $generate.trigger('click');
             else $prompt.trigger('focus');
         },
@@ -713,7 +750,7 @@ export function mountImageView(container) {
         pendingScene = null;
     }
     if (pendingApply) {
-        activeView.applySettings(pendingApply.run);
+        activeView.applySettings(pendingApply.run, pendingApply.prompt);
         pendingApply = null;
     }
 
@@ -730,8 +767,9 @@ export function mountImageView(container) {
             $send.prop('disabled', !canSendToChat());
             $result.find('.stng-send-nochat').prop('hidden', canSendToChat());
         }
-        $strip.empty().prop('hidden', sessionImages.length < 2);
-        for (const entry of sessionImages) {
+        const shown = imagesForThisChat();
+        $strip.empty().prop('hidden', shown.length < 2);
+        for (const entry of shown) {
             const thumb = $('<button type="button" class="stng-thumb"></button>')
                 .toggleClass('stng-selected', entry === current)
                 .attr('title', entry.prompt)

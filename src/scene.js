@@ -63,12 +63,23 @@ export function listSceneMessages(extraId = null) {
 /**
  * 고른 메시지를 확인용으로 보여 줄 내용.
  * @param {number} id
- * @returns {{ id: number, name: string, text: string }|null}
+ * @returns {{ id: number, name: string, text: string, persona?: string }|null}
  */
 export function getScenePreview(id) {
+    if (id === CHARACTER_SCENE) {
+        const characters = characterDescriptions();
+        if (!characters.length) return null;
+        // 내용은 길어서 이름만: 어떤 캐릭터와(함께 보낸다면) 어떤 페르소나인지
+        const context = getContext();
+        const persona = getSettings().sceneIncludeCards && String(context.powerUserSettings?.persona_description ?? '').trim() ? context.name1 : '';
+        return { id, name: characters.map(c => c.name).join(', '), text: '', persona };
+    }
     const message = (getContext().chat ?? [])[id];
     return isSceneCandidate(message) ? { id, name: message.name, text: plain(message.mes) } : null;
 }
+
+/** 드롭다운의 '캐릭터 설정만' — 메시지 대신 캐릭터 설명만으로 모습을 그린다 */
+export const CHARACTER_SCENE = -2;
 
 /** 장면 후보 중 가장 최근 메시지 번호, 없으면 -1 */
 export function lastSceneMessageId() {
@@ -103,6 +114,18 @@ function buildScenePrompt(messageId) {
     const context = getContext();
     const settings = getSettings();
     const chat = context.chat ?? [];
+
+    // 캐릭터 설정만: 채팅 내용 없이 캐릭터 설명(+설정에 따라 페르소나)으로 모습을 그린다
+    if (messageId === CHARACTER_SCENE) {
+        const characters = characterDescriptions();
+        if (!characters.length) throw new Error(tr('scene_no_card', 'This character has no description to draw from.'));
+        const parts = characters.map(c => `[Character: ${c.name}]\n${c.description}`);
+        const persona = settings.sceneIncludeCards ? substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim() : '';
+        if (persona) parts.push(`[User: ${context.name1}]\n${persona}`);
+        parts.push(`[Scene to illustrate]\nA portrait of ${characters.map(c => c.name).join(' and ')} as described above, showing appearance and clothing.`);
+        return parts.join('\n\n');
+    }
+
     const target = chat[messageId];
     if (!isSceneCandidate(target)) throw new Error(tr('scene_no_message', 'That message cannot be used.'));
 
@@ -159,11 +182,12 @@ export function getSceneProfileId() {
  * @returns {Promise<{ text: string, link: ScenePromptLink|null }>} 쓴 프롬프트와, 그 메시지 기록 자리(고친 뒤 생성하면 덮어쓰려고)
  */
 export async function promptFromScene(messageId, signal) {
-    const id = Number.isInteger(messageId) && messageId >= 0 ? messageId : lastSceneMessageId();
-    if (id < 0) throw new Error(tr('scene_no_messages', 'This chat has no messages to draw from.'));
+    const id = messageId === CHARACTER_SCENE ? CHARACTER_SCENE
+        : Number.isInteger(messageId) && messageId >= 0 ? messageId : lastSceneMessageId();
+    if (id === -1) throw new Error(tr('scene_no_messages', 'This chat has no messages to draw from.'));
 
     const systemPrompt = substituteParams(getSettings().scenePrompt);
-    const key = scenePromptKey(getContext().chat?.[id]);
+    const key = scenePromptLinkFor(id);
     const prompt = buildScenePrompt(id);
     const profileId = getSceneProfileId();
 
@@ -239,7 +263,7 @@ function scenePromptKey(message) {
  * @returns {string|null}
  */
 export function getRememberedScenePrompt(messageId) {
-    const found = scenePromptKey(getContext().chat?.[messageId]);
+    const found = scenePromptLinkFor(messageId);
     if (!found) return null;
     if (found.temp) return tempPrompts.get(found.key) ?? null;
     return promptStore.peek(found.key)?.text ?? null;
@@ -260,6 +284,14 @@ export function getRememberedPromptAt(found) {
  * @returns {ScenePromptLink|null}
  */
 export function scenePromptLinkFor(messageId) {
+    if (messageId === CHARACTER_SCENE) {
+        // 캐릭터 설명이 바뀌면 지문이 달라져 새로 쓴다
+        const characters = characterDescriptions();
+        if (!characters.length) return null;
+        const chatId = getContext().getCurrentChatId?.();
+        const id = `char|${fingerprint(characters.map(c => `${c.name}\n${c.description}`).join('\n'))}`;
+        return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
+    }
     return scenePromptKey(getContext().chat?.[messageId]);
 }
 

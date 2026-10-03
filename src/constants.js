@@ -19,8 +19,8 @@ export const AUTO_REFRESH_DELAY = 3_000;
 /** 주기 새로고침 선택지(분). 0 = 끔 */
 export const REFRESH_INTERVALS = Object.freeze([0, 1, 5, 15, 30, 60]);
 
-// 이번 세션에서 만든 이미지를 몇 장까지 기억할지(메모리에만, 새로고침하면 사라짐)
-export const MAX_SESSION_IMAGES = 12;
+// 이번 세션에서 만든 이미지를 몇 장까지 기억할지(메모리에만, 새로고침하면 사라짐). 채팅별로 나눠 보여 주므로 넉넉히
+export const MAX_SESSION_IMAGES = 30;
 
 /** 이미지 크기 선택지. 대부분의 모델이 받아들이는 64의 배수 위주 */
 export const SIZE_PRESETS = Object.freeze([
@@ -65,7 +65,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
     negativePrompt: '',
     // 모든 프롬프트 앞에 붙는 고정 문구(화풍·품질 태그 등)
     promptPrefix: '',
-    lastPrompt: '',
     // 이미지 생성 확장(SD) 설정을 처음 한 번 자동으로 가져왔는지
     sdImported: false,
     // 채팅에 보낸 이미지 메시지를 AI 프롬프트에서 숨김(SD 확장의 기본 동작과 같다)

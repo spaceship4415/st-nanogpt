@@ -72,6 +72,8 @@ function normalize(stored) {
         result.badgePosition = DEFAULT_SETTINGS.badgePosition;
     }
     result.sceneContextMessages = clampContext(result.sceneContextMessages);
+    // 프롬프트 칸은 열 때마다 빈칸이라 예전 '마지막 프롬프트'는 더 쓰지 않는다
+    delete result.lastPrompt;
     for (const key of ['imageMetaLimit', 'scenePromptLimit']) {
         if (!RECORD_LIMITS.includes(result[key])) result[key] = DEFAULT_SETTINGS[key];
     }

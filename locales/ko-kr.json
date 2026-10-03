@@ -147,8 +147,8 @@
     "nanogpt_tools.scene_box_hint": "채팅 AI가 메시지를 보고 프롬프트를 대신 씁니다(채팅 토큰 사용).",
     "nanogpt_tools.scene_rerun": "새로 작성",
     "nanogpt_tools.scene_load": "불러오기",
-    "nanogpt_tools.scene_cached": "이 메시지로 전에 쓴 프롬프트가 있습니다.",
-    "nanogpt_tools.scene_cached_loaded": "이 메시지로 전에 쓴 프롬프트를 불러왔습니다.",
+    "nanogpt_tools.scene_cached": "전에 쓴 프롬프트가 있습니다.",
+    "nanogpt_tools.scene_cached_loaded": "전에 쓴 프롬프트를 불러왔습니다.",
     "nanogpt_tools.gallery_scope_chat": "이 채팅",
     "nanogpt_tools.gallery_scope_all": "폴더 전체",
     "nanogpt_tools.gallery_count_chat": "이 채팅 이미지 {0}장",
@@ -164,5 +164,10 @@
     "nanogpt_tools.scene_no_chat": "채팅을 열면 쓸 수 있습니다.",
     "nanogpt_tools.send_no_chat": "채팅을 열면 채팅에 보낼 수 있습니다.",
     "nanogpt_tools.saved_in_folder": "{0} 갤러리에 저장됨",
-    "nanogpt_tools.prompt_expand": "프롬프트 칸 크게 보기"
+    "nanogpt_tools.prompt_expand": "프롬프트 칸 크게 보기",
+    "nanogpt_tools.scene_character": "캐릭터 설정만 (메시지 없이)",
+    "nanogpt_tools.scene_character_preview": "캐릭터: {0}",
+    "nanogpt_tools.scene_working_character": "캐릭터 설정으로 프롬프트를 쓰는 중…\n버튼을 다시 누르면 취소합니다.",
+    "nanogpt_tools.scene_no_card": "이 캐릭터에는 그릴 설명이 없습니다.",
+    "nanogpt_tools.scene_persona_preview": "페르소나: {0}"
 }
