@@ -550,11 +550,39 @@ export function mountImageView(container) {
     }
     $autoToggle.on('click', () => setAutoOpen($autoBox.prop('hidden')));
 
+    /**
+     * 프롬프트 칸을 내용 길이에 맞춰 늘린다(화면의 45% 까지). 칸 안에 스크롤이 생기면 휴대폰에서
+     * 그 칸 위를 밀 때 패널이 아니라 칸만 스크롤되어 아래(고급)로 내려갈 수 없었다.
+     * 패널이 아직 화면에 없으면(탭이 숨겨졌거나 여는 중) 잠깐 뒤에 다시 잰다
+     * @param {number} [tries]
+     */
+    function fitPrompt(tries = 20) {
+        const el = $prompt[0];
+        if (!(el instanceof HTMLTextAreaElement)) return;
+        // 크게 보기 중에는 CSS 높이를 그대로 쓴다
+        if (el.classList.contains('stng-prompt-big')) {
+            el.style.height = '';
+            return;
+        }
+        if (!el.offsetParent) {
+            if (tries > 0) setTimeout(() => fitPrompt(tries - 1), 100);
+            return;
+        }
+        el.style.height = 'auto';
+        // 줄 높이가 'normal' 이면 숫자가 아니라 글자 크기로 어림한다. 최소 4줄
+        const style = getComputedStyle(el);
+        const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.35 || 22;
+        const min = line * 4 + 16;
+        el.style.height = `${Math.min(Math.max(el.scrollHeight + 2, min), Math.round(window.innerHeight * 0.45))}px`;
+    }
+    $prompt.on('input', () => fitPrompt());
+
     // 프롬프트 칸 크게 보기: 화면 높이의 대부분으로 늘렸다가 다시 원래대로
     const $expand = $root.find('.stng-prompt-expand');
     $expand.on('click', () => {
         const big = !$prompt.hasClass('stng-prompt-big');
         $prompt.toggleClass('stng-prompt-big', big);
+        fitPrompt();
         $expand.attr('aria-pressed', String(big))
             .find('i').attr('class', big ? 'fa-solid fa-down-left-and-up-right-to-center' : 'fa-solid fa-up-right-and-down-left-from-center');
         $prompt[0].scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -602,7 +630,10 @@ export function mountImageView(container) {
      * @param {string} [promptText]
      */
     function fillForm(promptText) {
-        if (promptText !== undefined) $prompt.val(promptText);
+        if (promptText !== undefined) {
+            $prompt.val(promptText);
+            fitPrompt();
+        }
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
         $steps.val(settings.steps);
@@ -1079,12 +1110,16 @@ export function mountImageView(container) {
         const remembered = getRememberedScenePrompt(id);
         if (remembered && (wasLinked || !String($prompt.val()).trim())) {
             $prompt.val(remembered).removeClass('stng-invalid');
+            fitPrompt();
             sceneLink = scenePromptLinkFor(id);
             sceneSourceId = id >= 0 ? id : null;
             renderScenePreview(true);
         } else {
             // 칸에 있던 건 다른 메시지의 자동생성 결과였으니, 기억이 없는 메시지를 고르면 비운다
-            if (wasLinked) $prompt.val('');
+            if (wasLinked) {
+                $prompt.val('');
+                fitPrompt();
+            }
             renderScenePreview();
         }
     });
