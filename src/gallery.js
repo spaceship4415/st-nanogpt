@@ -312,8 +312,8 @@ export function mountGalleryView(container, { onUseMeta }) {
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
         row(`${tr('steps', 'Steps')} · ${tr('scale', 'CFG scale')}`, `${meta.steps || '-'} · ${meta.scale || '-'}`);
         row(tr('prompt', 'Prompt'), meta.prompt);
-        row(tr('prefix', 'Prompt prefix'), meta.promptPrefix);
-        row(tr('negative', 'Negative prompt'), meta.negativePrompt);
+        row(tr('prefix', 'Common prompt prefix'), meta.promptPrefix);
+        row(tr('negative', 'Negative common prompt prefix'), meta.negativePrompt);
         if (meta.createdAt) row(tr('created', 'Created'), new Date(meta.createdAt).toLocaleString());
         $info.prop('hidden', false);
     }

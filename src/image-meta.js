@@ -11,7 +11,7 @@ import { getSettings } from './settings.js';
 /**
  * @typedef {object} ImageMeta
  * @property {string} model
- * @property {string} prompt 사용자가 쓴 프롬프트(앞에 붙일 프롬프트 제외)
+ * @property {string} prompt 사용자가 쓴 프롬프트(공통 프롬프트 접두사 제외)
  * @property {string} promptPrefix
  * @property {string} negativePrompt
  * @property {number} width

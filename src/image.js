@@ -386,11 +386,11 @@ export function importFromImageGeneration() {
     }
     if (typeof sd.prompt_prefix === 'string') {
         setSetting('promptPrefix', sd.prompt_prefix);
-        imported.push(tr('prefix', 'Prompt prefix'));
+        imported.push(tr('prefix', 'Common prompt prefix'));
     }
     if (typeof sd.negative_prompt === 'string') {
         setSetting('negativePrompt', sd.negative_prompt);
-        imported.push(tr('negative', 'Negative prompt'));
+        imported.push(tr('negative', 'Negative common prompt prefix'));
     }
     return imported;
 }
