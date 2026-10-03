@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, LEGACY_SCENE_PROMPT_V6, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -125,6 +125,12 @@ function migrate(target) {
     if (target.version < 6) {
         if (target.scenePrompt === LEGACY_SCENE_PROMPT_V5) target.scenePrompt = DEFAULT_SCENE_PROMPT;
         target.version = 6;
+        target.__changed = true;
+    }
+    // v6 → v7: 규칙을 늘린 기본 지시문(v4~v6)이 오히려 장면을 덜 옮겨서 처음 문장으로 되돌린다
+    if (target.version < 7) {
+        if ([LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, LEGACY_SCENE_PROMPT_V6].includes(target.scenePrompt)) target.scenePrompt = DEFAULT_SCENE_PROMPT;
+        target.version = 7;
         target.__changed = true;
     }
 }

@@ -38,7 +38,13 @@ export const SIZE_PRESETS = Object.freeze([
     { value: '512x512', label: 'size_small', english: 'Small square' },
 ]);
 
-export const DEFAULT_SCENE_PROMPT = [
+/*
+ * 기본 지시문은 처음(v2) 문장으로 되돌렸다. 규칙을 늘린 v4~v6 은 채팅 AI 가 장면보다 규칙에 매달려 결과가 나빠졌다
+ */
+export const DEFAULT_SCENE_PROMPT = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
+
+/** v6 의 기본 지시문(규칙이 많은 판). 사용자가 고치지 않았으면 v7 에서 처음 문장으로 되돌린다 */
+export const LEGACY_SCENE_PROMPT_V6 = [
     'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
     '',
     'Order (the image generator follows the first words most strongly):',
@@ -59,7 +65,7 @@ export const DEFAULT_SCENE_PROMPT = [
     'Output only the keyword list, nothing else.',
 ].join('\n');
 
-/** v5 의 기본 지시문. 사용자가 고치지 않았으면 v6 에서 새 기본값으로 바꾼다 */
+/** v5 의 기본 지시문. 사용자가 고치지 않았으면 처음 문장으로 되돌린다 */
 export const LEGACY_SCENE_PROMPT_V5 = [
     'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
     '',
@@ -79,7 +85,7 @@ export const LEGACY_SCENE_PROMPT_V5 = [
     'Output only the keyword list, nothing else.',
 ].join('\n');
 
-/** v4 의 기본 지시문(장소가 맨 끝). 사용자가 고치지 않았으면 v5 에서 새 기본값으로 바꾼다 */
+/** v4 의 기본 지시문. 사용자가 고치지 않았으면 처음 문장으로 되돌린다 */
 export const LEGACY_SCENE_PROMPT_V4 = [
     'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
     '',
@@ -98,7 +104,7 @@ export const LEGACY_SCENE_PROMPT_V4 = [
     'Output only the keyword list, nothing else.',
 ].join('\n');
 
-/** v2·v3 의 기본 지시문. 사용자가 고치지 않았으면 v4 에서 새 기본값으로 바꾼다 */
+/** v2·v3 의 기본 지시문(지금 기본값과 같다) */
 export const LEGACY_SCENE_PROMPT_V2 = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
 
 /** v1 의 기본 지시문. 사용자가 고치지 않았으면 v2 에서 새 기본값으로 바꾼다 */
@@ -113,7 +119,7 @@ export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
 /** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
 export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
 
-export const SETTINGS_VERSION = 6;
+export const SETTINGS_VERSION = 7;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
