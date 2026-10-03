@@ -11,7 +11,7 @@ import { addInsert, removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { removeImageMeta, setImageMeta } from './image-meta.js';
 import { BOTH_SCENE, CHARACTER_SCENE, PERSONA_SCENE, getRememberedPromptAt, isPortraitScene, portraitAvailability, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
-import { deleteSdStyle, exportSdStyles, getSdStyles, importSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
+import { deleteSdStyle, exportSdStyles, findStyleName, getSdStyles, importSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -21,6 +21,7 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {string} prompt
  * @property {string} negativePrompt
  * @property {string} [promptPrefix] 생성할 때 앞에 붙인 프롬프트
+ * @property {string} [style] 그때 고른 스타일 이름(없으면 '')
  * @property {string} model
  * @property {number} width
  * @property {number} height
@@ -141,7 +142,9 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
         }, signal);
 
         /** @type {GeneratedImage} */
-        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId, folder, source, savedUrl: null };
+        // 어떤 스타일로 만들었는지(접두사가 저장된 스타일과 같을 때만). 나중에 스타일 이름을 바꿔도 만들 때 이름이 남는다
+        const style = findStyleName(settings.promptPrefix, negative);
+        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, style, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId, folder, source, savedUrl: null };
         sessionImages.unshift(entry);
         sessionImages.length = Math.min(sessionImages.length, MAX_SESSION_IMAGES);
         if (settings.autoSaveGallery) {
@@ -446,6 +449,7 @@ export function metaOf(entry) {
         prompt: entry.prompt,
         promptPrefix: entry.promptPrefix ?? '',
         negativePrompt: entry.negativePrompt ?? '',
+        style: entry.style ?? '',
         width: entry.width,
         height: entry.height,
         steps: entry.steps ?? 0,
@@ -676,8 +680,7 @@ export function mountImageView(container) {
 
     /** 지금 두 칸과 내용이 같은 스타일 이름. 없으면 ''(저장 안 된 설정) */
     function matchingStyle() {
-        const same = (/** @type {string} */ a, /** @type {string} */ b) => String(a ?? '').trim() === String(b ?? '').trim();
-        return getSdStyles()?.find(s => same(s.prefix, settings.promptPrefix) && same(s.negative, settings.negativePrompt))?.name ?? '';
+        return findStyleName(settings.promptPrefix, settings.negativePrompt);
     }
 
     function fillStyles() {
@@ -1213,6 +1216,7 @@ export function mountImageView(container) {
         if (current) {
             $preview.attr('src', toDataUrl(current)).attr('alt', current.prompt);
             const meta = [modelLabel(current.model), `${current.width}×${current.height}`];
+            if (current.style) meta.push(current.style);
             // 어느 갤러리 폴더(캐릭터)에 들어갔는지 보여 준다
             const folder = galleryFolderOf(current.savedUrl);
             if (folder) meta.push(tr('saved_in_folder', 'Saved to {0} gallery', folder));

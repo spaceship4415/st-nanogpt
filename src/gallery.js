@@ -7,6 +7,7 @@ import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { modelLabel } from './api.js';
 import { filterByChat, getImageMeta } from './image-meta.js';
+import { findStyleName } from './sd-styles.js';
 import { attachTarget, canSendToChat, deleteGalleryImage, galleryFolder, sendImageToChat } from './image.js';
 import { getSettings, setSetting } from './settings.js';
 
@@ -315,7 +316,9 @@ export function mountGalleryView(container, { onUseMeta }) {
         currentMeta = meta;
         renderSendLabel();
         $reuse.prop('hidden', false);
-        $info.find('summary > span').text(`${tr('gallery_info', 'Generation info')} · ${modelLabel(meta.model)} · ${meta.width}×${meta.height}`);
+        // 만들 때 기록한 스타일 이름, 없으면(이 기능 전 기록) 접두사가 같은 지금 스타일. 접힌 제목에도 보여 준다
+        const styleName = meta.style || findStyleName(meta.promptPrefix, meta.negativePrompt);
+        $info.find('summary > span').text([tr('gallery_info', 'Generation info'), styleName, modelLabel(meta.model), `${meta.width}×${meta.height}`].filter(Boolean).join(' · '));
         const $list = $info.find('.stng-meta-list').empty();
         /** @param {string} label @param {string} value */
         const row = (label, value) => {
@@ -323,6 +326,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         };
         row(tr('model', 'Model'), modelLabel(meta.model) === meta.model ? meta.model : `${modelLabel(meta.model)} (${meta.model})`);
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
+        row(tr('style', 'Style'), styleName);
         row(`${tr('steps', 'Sampling steps')} · ${tr('scale', 'CFG scale')}`, meta.steps ? `${meta.steps} · ${meta.scale ?? '-'}` : '-');
         row(tr('prompt', 'Prompt'), meta.prompt);
         row(tr('prefix', 'Common prompt prefix'), meta.promptPrefix);

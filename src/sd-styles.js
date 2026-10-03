@@ -23,6 +23,16 @@ export function getSdStyles() {
 }
 
 /**
+ * 공통 접두사·부정 접두사가 똑같은 스타일의 이름. 없으면 ''
+ * @param {string} prefix
+ * @param {string} negative
+ */
+export function findStyleName(prefix, negative) {
+    const same = (/** @type {string} */ a, /** @type {string} */ b) => String(a ?? '').trim() === String(b ?? '').trim();
+    return getSdStyles()?.find(s => same(s.prefix, prefix) && same(s.negative, negative))?.name ?? '';
+}
+
+/**
  * 같은 이름이 있으면 내용을 바꾸고, 없으면 새로 넣는다
  * @param {string} name
  * @param {string} prefix

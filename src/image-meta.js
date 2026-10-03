@@ -19,6 +19,7 @@ import { getSettings } from './settings.js';
  * @property {number} steps
  * @property {number} scale
  * @property {number} createdAt
+ * @property {string} [style] 만들 때 고른 스타일 이름(그때 접두사가 스타일과 같았을 때만). 이 기능 전 기록에는 없다
  * @property {string|null} [chatId] 만든 채팅 ID(임시 채팅이면 null). 이 기능 전에 만든 기록에는 없다
  * @property {{ chatId: string, messageId: number, fingerprint: string }|null} [source] 프롬프트를 쓴 메시지
  *   (갤러리에서 채팅에 보낼 때 그 메시지에 붙이려고). 직접 쓴 프롬프트나 이 기능 전 기록에는 없다
