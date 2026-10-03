@@ -1,5 +1,6 @@
-import { IMAGE_META_FILE, MAX_IMAGE_META } from './constants.js';
-import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
+import { IMAGE_META_FILE } from './constants.js';
+import { createJsonStore } from './json-store.js';
+import { getSettings } from './settings.js';
 
 /*
  * 갤러리에 저장한 이미지의 생성 정보(모델·프롬프트·설정값) 기록.
@@ -18,15 +19,14 @@ import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
  * @property {number} steps
  * @property {number} scale
  * @property {number} createdAt
+ * @property {string|null} [chatId] 만든 채팅 ID(임시 채팅이면 null). 이 기능 전에 만든 기록에는 없다
  */
 
-/** @type {Record<string, ImageMeta>|null} */
-let records = null;
-/** @type {Promise<Record<string, ImageMeta>>|null} */
-let loading = null;
-let writable = false;
-/** @type {ReturnType<typeof setTimeout>|null} */
-let saveTimer = null;
+/** @type {ReturnType<typeof createJsonStore<ImageMeta>>} */
+const store = createJsonStore(IMAGE_META_FILE, () => getSettings().imageMetaLimit);
+
+/** 설정창의 '기록 개수'용 */
+export const imageMetaRecords = { count: () => store.count(), trim: () => store.trim() };
 
 /**
  * 같은 이미지가 '/user/images/a b/x.jpg' 나 'user/images/a%20b/x.jpg' 처럼 달리 적혀도 같은 키가 되게
@@ -42,78 +42,40 @@ function keyOf(url) {
     return path;
 }
 
-/** @returns {Promise<Record<string, ImageMeta>>} */
-function load() {
-    if (records) return Promise.resolve(records);
-    if (!loading) {
-        loading = (async () => {
-            try {
-                const data = await readUserFile(IMAGE_META_FILE);
-                records = data && typeof data === 'object' ? data : {};
-                writable = true;
-            } catch (error) {
-                // 읽지 못했으면 덮어쓰지 않는다(이번 세션 기록은 메모리에만)
-                console.warn('[NanoGPT] could not read the image info file', error);
-                records = {};
-            }
-            return records;
-        })();
-    }
-    return loading;
-}
-
-function scheduleSave() {
-    if (!writable) return;
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-        saveTimer = null;
-        writeUserFile(IMAGE_META_FILE, records);
-    }, 300);
-}
-
 /**
  * @param {string} url 이미지 경로
  * @returns {Promise<ImageMeta|null>}
  */
-export async function getImageMeta(url) {
-    const all = await load();
-    return all[keyOf(url)] ?? null;
+export function getImageMeta(url) {
+    return store.get(keyOf(url));
 }
 
 /**
  * @param {string} url 이미지 경로
  * @param {ImageMeta} meta
  */
-export async function setImageMeta(url, meta) {
-    const all = await load();
-    all[keyOf(url)] = meta;
-    // 너무 커지지 않게 오래된 기록부터 지운다
-    const keys = Object.keys(all);
-    if (keys.length > MAX_IMAGE_META) {
-        keys.sort((a, b) => (all[a].createdAt || 0) - (all[b].createdAt || 0))
-            .slice(0, keys.length - MAX_IMAGE_META)
-            .forEach(key => delete all[key]);
-    }
-    scheduleSave();
+export function setImageMeta(url, meta) {
+    return store.set(keyOf(url), meta);
 }
 
 /** @param {string} url 이미지 경로 */
-export async function removeImageMeta(url) {
-    const all = await load();
-    if (delete all[keyOf(url)]) scheduleSave();
+export function removeImageMeta(url) {
+    return store.remove(keyOf(url));
+}
+
+/**
+ * 갤러리 '이 채팅만' 보기: 이 폴더의 파일 중 그 채팅에서 만든 것만 고른다
+ * @param {string} folder
+ * @param {string[]} files
+ * @param {string} chatId
+ * @returns {Promise<string[]>}
+ */
+export async function filterByChat(folder, files, chatId) {
+    const all = await store.preload();
+    return files.filter(file => all[keyOf(`user/images/${folder}/${file}`)]?.chatId === chatId);
 }
 
 /** 확장을 지울 때 */
-export async function deleteImageMetaFile() {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = null;
-    writable = false;
-    await deleteUserFile(IMAGE_META_FILE);
+export function deleteImageMetaFile() {
+    return store.deleteFile();
 }
-
-window.addEventListener('pagehide', () => {
-    if (!saveTimer) return;
-    clearTimeout(saveTimer);
-    saveTimer = null;
-    writeUserFile(IMAGE_META_FILE, records, true);
-});

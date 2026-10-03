@@ -1,16 +1,17 @@
 import { eventSource, event_types } from '../../../../script.js';
 import { renderExtensionTemplateAsync } from '../../../extensions.js';
+import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { hasNanoGptKey, NoKeyError } from './src/api.js';
 import { installBadge, refreshBadge } from './src/badge.js';
-import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, REFRESH_INTERVALS, SIZE_PRESETS } from './src/constants.js';
+import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, RECORD_LIMITS, REFRESH_INTERVALS, SIZE_PRESETS } from './src/constants.js';
 import { tr } from './src/i18n.js';
-import { deleteImageMetaFile } from './src/image-meta.js';
+import { deleteImageMetaFile, imageMetaRecords } from './src/image-meta.js';
 import { createImage, sendImageToChat, useSceneMessage } from './src/image.js';
 import { openPanel } from './src/panel.js';
-import { getSceneProfileId, listSceneProfiles } from './src/scene.js';
+import { deleteScenePromptsFile, getSceneProfileId, listSceneProfiles, preloadScenePrompts, scenePromptRecords } from './src/scene.js';
 import { clampContext, deleteSettingsData, getSettings, loadSettings, setSetting } from './src/settings.js';
 import { formatCount, formatUsd, getUsageState, isNanoGptChatSource, onUsageChange, percentOf, refreshUsage, scheduleAutoRefresh, startPeriodicRefresh } from './src/usage.js';
 
@@ -60,6 +61,8 @@ async function mountSettingsPanel() {
         setSetting('refreshInterval', Number($(this).val()) || 0);
     });
 
+    mountRecordLimits();
+
     $('#st_nanogpt_scene_profile').on('change', function () {
         setSetting('sceneProfileId', String($(this).val() ?? ''));
     });
@@ -67,6 +70,38 @@ async function mountSettingsPanel() {
     for (const type of [event_types.CONNECTION_PROFILE_CREATED, event_types.CONNECTION_PROFILE_UPDATED, event_types.CONNECTION_PROFILE_DELETED]) {
         eventSource.on(type, fillProfileSelect);
     }
+}
+
+/**
+ * '기록' 묶음: 이미지 생성 정보·써 둔 프롬프트의 최대 개수.
+ * 지금 기록보다 적게 줄이면 오래된 것부터 지워지므로(되돌릴 수 없음) 먼저 묻는다
+ */
+function mountRecordLimits() {
+    const records = { imageMetaLimit: imageMetaRecords, scenePromptLimit: scenePromptRecords };
+    $('#st_nanogpt_settings select[data-limit]').each(function () {
+        const key = /** @type {'imageMetaLimit'|'scenePromptLimit'} */ (this.dataset.limit);
+        const $select = $(this);
+        $select.append(RECORD_LIMITS.map(limit => new Option(
+            limit === 0 ? tr('limit_off', 'Off') : tr('limit_count', '{0}', limit.toLocaleString()),
+            String(limit))));
+        $select.val(String(getSettings()[key]));
+        $select.on('change', async () => {
+            const limit = Number($select.val());
+            const count = await records[key].count();
+            if (count > limit) {
+                const message = limit === 0
+                    ? tr('limit_confirm_all', 'All {0} saved records will be deleted. Continue?', count)
+                    : tr('limit_confirm', 'The oldest {0} of {1} saved records will be deleted. Continue?', count - limit, count);
+                const ok = await callGenericPopup(message, POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
+                if (ok !== POPUP_RESULT.AFFIRMATIVE) {
+                    $select.val(String(getSettings()[key]));
+                    return;
+                }
+            }
+            setSetting(key, limit);
+            await records[key].trim();
+        });
+    });
 }
 
 /** 체크박스에 딸린 설정(data-depends)은 그 체크박스가 꺼지면 흐리게 */
@@ -117,12 +152,13 @@ function fillProfileSelect() {
 }
 
 /**
- * 확장을 지울 때 ST 가 부르는 훅(manifest.json 의 hooks.delete). 설정 파일과 이미지 생성 정보 파일을 지운다.
+ * 확장을 지울 때 ST 가 부르는 훅(manifest.json 의 hooks.delete). 설정·이미지 생성 정보·써 둔 프롬프트 파일을 지운다.
  * 갤러리 이미지 자체는 지우지 않는다(채팅 메시지가 쓰고 있을 수 있다).
  */
 export async function onDelete() {
     await deleteSettingsData();
     await deleteImageMetaFile();
+    await deleteScenePromptsFile();
 }
 
 /** /nanousage 가 돌려주는 한 줄 요약 */
@@ -237,6 +273,7 @@ function refreshMessageButton() {
 
 jQuery(async () => {
     await loadSettings();
+    preloadScenePrompts();
     installBadge(() => openPanel());
     installMessageButton();
 

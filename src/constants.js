@@ -5,8 +5,11 @@ export const LOG_PREFIX = '[NanoGPT]';
 export const SETTINGS_FILE = 'st-nanogpt-settings.json';
 /** 갤러리 이미지의 생성 정보 기록 파일(같은 폴더) */
 export const IMAGE_META_FILE = 'st-nanogpt-images.json';
-/** 생성 정보를 몇 장까지 기억할지(넘으면 오래된 것부터 지움) */
-export const MAX_IMAGE_META = 2000;
+
+/** 메시지별로 써 둔 프롬프트 기록 파일(같은 폴더) */
+export const SCENE_PROMPTS_FILE = 'st-nanogpt-prompts.json';
+/** 기록 개수 선택지. 0 = 기록 안 함. 넘으면 오래된 것부터 지운다 */
+export const RECORD_LIMITS = Object.freeze([0, 100, 500, 1000, 2000, 5000]);
 
 // 자동 새로고침이 너무 잦지 않게 막는 최소 간격(ms). 직접 누른 새로고침은 이 제한을 받지 않는다
 export const AUTO_REFRESH_MIN_INTERVAL = 15_000;
@@ -67,6 +70,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
     sdImported: false,
     // 채팅에 보낸 이미지 메시지를 AI 프롬프트에서 숨김(SD 확장의 기본 동작과 같다)
     sendHidden: true,
+    // 이미지 생성 정보·써 둔 프롬프트를 몇 개까지 기억할지(RECORD_LIMITS, 0 = 기록 안 함)
+    imageMetaLimit: 2000,
+    scenePromptLimit: 1000,
+    // 갤러리 보기 범위: 'all' = 캐릭터 폴더 전체 / 'chat' = 지금 채팅에서 만든 것만(마지막 선택 기억)
+    galleryScope: 'all',
     // 생성하자마자 서버 갤러리(user/images)에 저장. 끄면 채팅에 보낼 때만 저장한다
     autoSaveGallery: true,
     // [프롬프트 자동생성]에 쓰는 지시문(시스템 프롬프트로 보낸다)

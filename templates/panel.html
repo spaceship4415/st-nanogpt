@@ -21,6 +21,17 @@
     <section class="stng-tab-body" data-tab="usage" role="tabpanel"></section>
 
     <section class="stng-tab-body stng-gallery" data-tab="gallery" role="tabpanel">
+        <!-- 보기 범위: 이 채팅에서 만든 것만 / 이 캐릭터(폴더) 전체 -->
+        <div class="stng-seg" role="group">
+            <button type="button" class="stng-seg-btn" data-scope="chat">
+                <i class="fa-solid fa-comment"></i>
+                <span data-i18n="nanogpt_tools.gallery_scope_chat">This chat</span>
+            </button>
+            <button type="button" class="stng-seg-btn" data-scope="all">
+                <i class="fa-solid fa-folder"></i>
+                <span data-i18n="nanogpt_tools.gallery_scope_all">Whole folder</span>
+            </button>
+        </div>
         <div class="stng-scene">
             <select class="text_pole stng-gallery-folder" title="Folder" data-i18n="[title]nanogpt_tools.gallery_folder"></select>
             <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-refresh" title="Refresh" data-i18n="[title]nanogpt_tools.refresh">
@@ -30,7 +41,7 @@
         <small class="stng-muted stng-gallery-count"></small>
         <div class="stng-notice stng-gallery-empty" hidden>
             <i class="fa-solid fa-image"></i>
-            <span data-i18n="nanogpt_tools.gallery_empty">No images in this folder yet.</span>
+            <!-- 글자는 gallery.js 가 보기 범위에 맞춰 넣는다 --><span></span>
         </div>
         <div class="stng-gallery-grid"></div>
 
@@ -59,6 +70,7 @@
                     <span data-i18n="nanogpt_tools.delete">Delete</span>
                 </button>
             </div>
+            <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
 
             <!-- 생성 정보: 이 확장이 기록한 이미지만 있다. 내용은 gallery.js 가 채운다 -->
             <details class="stng-gallery-info" hidden>
@@ -105,7 +117,10 @@
             <div class="stng-field">
                 <!-- 기본은 직접 쓰기. 자동생성은 제목 옆 버튼으로 펼치는 보조 기능 -->
                 <div class="stng-row stng-spread">
-                    <span class="stng-field-label" data-i18n="nanogpt_tools.prompt">Prompt</span>
+                    <span class="stng-field-label stng-grow" data-i18n="nanogpt_tools.prompt">Prompt</span>
+                    <button type="button" class="menu_button stng-btn stng-btn-small stng-prompt-expand" aria-pressed="false" title="Bigger prompt box" data-i18n="[title]nanogpt_tools.prompt_expand">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+                    </button>
                     <button type="button" class="menu_button stng-btn stng-btn-small stng-auto-toggle" aria-expanded="false">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                         <span data-i18n="nanogpt_tools.scene">Auto-write prompt</span>
@@ -113,6 +128,7 @@
                     </button>
                 </div>
                 <div class="stng-auto-box" hidden>
+                    <small class="stng-muted stng-scene-nochat" hidden data-i18n="nanogpt_tools.scene_no_chat">Open a chat to use this.</small>
                     <small class="stng-muted" data-i18n="nanogpt_tools.scene_box_hint">Your chat AI reads a message and writes the prompt for you (uses chat tokens).</small>
                     <div class="stng-scene">
                         <select class="text_pole stng-img-scene-msg" title="Message to draw" data-i18n="[title]nanogpt_tools.scene_message"></select>
@@ -124,6 +140,14 @@
                     <div class="stng-scene-preview" hidden>
                         <div class="stng-scene-preview-name"></div>
                         <div class="stng-scene-preview-text"></div>
+                    </div>
+                    <!-- 이 메시지로 전에 쓴 프롬프트가 있으면(다시 쓰지 않고 불러오기). 글자는 image.js 가 넣는다 -->
+                    <div class="stng-scene-cached" hidden>
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span></span>
+                        <button type="button" class="menu_button stng-btn stng-btn-small stng-scene-load">
+                            <span data-i18n="nanogpt_tools.scene_load">Load</span>
+                        </button>
                     </div>
                     <small class="stng-muted stng-scene-hint" hidden data-i18n="nanogpt_tools.scene_older_hint">For older messages, tap ⚡ in that message's … menu.</small>
                 </div>
@@ -197,6 +221,7 @@
                     <span data-i18n="nanogpt_tools.load_settings">Load settings</span>
                 </button>
             </div>
+            <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
             <div class="stng-img-strip"></div>
         </div>
     </section>

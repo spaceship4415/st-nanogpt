@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { BADGE_POSITIONS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { BADGE_POSITIONS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -72,6 +72,9 @@ function normalize(stored) {
         result.badgePosition = DEFAULT_SETTINGS.badgePosition;
     }
     result.sceneContextMessages = clampContext(result.sceneContextMessages);
+    for (const key of ['imageMetaLimit', 'scenePromptLimit']) {
+        if (!RECORD_LIMITS.includes(result[key])) result[key] = DEFAULT_SETTINGS[key];
+    }
     if (!REFRESH_INTERVALS.includes(result.refreshInterval)) {
         result.refreshInterval = DEFAULT_SETTINGS.refreshInterval;
     }

@@ -51,14 +51,14 @@
                             <option value="subscription" data-i18n="nanogpt_tools.badge_subscription">Subscription usage only</option>
                         </select>
                     </label>
-                    <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_sub_hint">Top is below the top bar, bottom is above the message box. Subscription usage is the share of this week's input tokens used.</small>
+                    <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_sub_hint">Top = below the top bar, bottom = above the message box. Subscription usage = share of this week's input tokens used.</small>
                 </div>
 
                 <label class="stng-item" for="st_nanogpt_auto">
                     <input id="st_nanogpt_auto" type="checkbox" data-setting="autoRefresh" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto">Refresh after use</span>
-                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_hint">Checks right after a NanoGPT reply or a generated image. When you use it back to back, at most once every 15 seconds.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_hint">Right after a NanoGPT reply or image. At most once every 15 seconds.</small>
                     </span>
                 </label>
 
@@ -67,7 +67,7 @@
                     <!-- 선택지는 index.js 가 채운다(숫자 값이라 data-setting 으로 묶지 않는다) -->
                     <select id="st_nanogpt_refresh_interval" class="text_pole"></select>
                 </label>
-                <small class="stng-hint" data-i18n="nanogpt_tools.setting_refresh_interval_hint">Checks on a schedule even when you are not using it, to catch usage from other devices or apps. Pauses while SillyTavern is in the background.</small>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_refresh_interval_hint">On a schedule even when idle, to catch usage from other devices. Pauses in the background.</small>
             </section>
 
             <section class="stng-group">
@@ -80,7 +80,7 @@
                     <input id="st_nanogpt_auto_save" type="checkbox" data-setting="autoSaveGallery" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto_save">Save to the gallery right after generating</span>
-                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_save_hint">Kept on the server (user/images, in the current character's folder) even after a reload. When off, images are saved only when sent to the chat.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_save_hint">Kept after a reload. When off, saved only when sent to the chat.</small>
                     </span>
                 </label>
 
@@ -112,7 +112,7 @@
                     <!-- 선택지는 index.js 가 연결 프로필 목록으로 채운다 -->
                     <select id="st_nanogpt_scene_profile" class="text_pole"></select>
                 </label>
-                <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_profile_hint">A profile with a lighter, lower-cost model reduces token costs. Your chat connection stays as it is.</small>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_profile_hint">A lighter, lower-cost model saves tokens. Your chat connection stays as it is.</small>
                 <small class="stng-hint" id="st_nanogpt_scene_profile_off" hidden data-i18n="nanogpt_tools.setting_scene_profile_off">Turn on the Connection Manager extension to choose a profile.</small>
 
                 <label class="stng-inline" for="st_nanogpt_scene_context">
@@ -125,7 +125,7 @@
                     <input id="st_nanogpt_scene_cards" type="checkbox" data-setting="sceneIncludeCards" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_cards">Include character and persona descriptions</span>
-                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_cards_hint">Gets looks and clothing right. Long cards use more tokens.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_cards_hint">Better looks and clothing. Long cards use more tokens.</small>
                     </span>
                 </label>
 
@@ -141,6 +141,24 @@
                         </button>
                     </span>
                 </details>
+            </section>
+
+            <section class="stng-group">
+                <div class="stng-group-title">
+                    <i class="fa-solid fa-box-archive"></i>
+                    <span data-i18n="nanogpt_tools.settings_group_records">Records</span>
+                </div>
+
+                <!-- 선택지는 index.js 가 채운다(숫자 값이라 data-setting 으로 묶지 않는다) -->
+                <label class="stng-inline" for="st_nanogpt_image_meta_limit">
+                    <span data-i18n="nanogpt_tools.setting_image_meta_limit">Image info</span>
+                    <select id="st_nanogpt_image_meta_limit" class="text_pole" data-limit="imageMetaLimit"></select>
+                </label>
+                <label class="stng-inline" for="st_nanogpt_scene_prompt_limit">
+                    <span data-i18n="nanogpt_tools.setting_scene_prompt_limit">Written prompts</span>
+                    <select id="st_nanogpt_scene_prompt_limit" class="text_pole" data-limit="scenePromptLimit"></select>
+                </label>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_records_hint">Kept in user/files/. When full, the oldest go first.</small>
             </section>
 
             <div class="stng-commands">

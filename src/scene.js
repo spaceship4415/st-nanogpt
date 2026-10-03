@@ -1,7 +1,9 @@
 import { generateRaw, substituteParams } from '../../../../../script.js';
 import { getContext } from '../../../../extensions.js';
 import { ConnectionManagerRequestService } from '../../../shared.js';
+import { SCENE_PROMPTS_FILE } from './constants.js';
 import { tr } from './i18n.js';
+import { createJsonStore } from './json-store.js';
 import { getSettings } from './settings.js';
 
 /*
@@ -154,13 +156,14 @@ export function getSceneProfileId() {
  * 설정에서 연결 프로필을 골랐으면 그 프로필로(지금 채팅 연결은 그대로), 아니면 현재 채팅 연결로 보낸다.
  * @param {number} [messageId] 생략하면 최신 메시지
  * @param {AbortSignal} [signal] 프로필로 보낼 때의 취소 신호(현재 연결은 ST 의 중지로 멈춘다)
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string, link: ScenePromptLink|null }>} 쓴 프롬프트와, 그 메시지 기록 자리(고친 뒤 생성하면 덮어쓰려고)
  */
 export async function promptFromScene(messageId, signal) {
     const id = Number.isInteger(messageId) && messageId >= 0 ? messageId : lastSceneMessageId();
     if (id < 0) throw new Error(tr('scene_no_messages', 'This chat has no messages to draw from.'));
 
     const systemPrompt = substituteParams(getSettings().scenePrompt);
+    const key = scenePromptKey(getContext().chat?.[id]);
     const prompt = buildScenePrompt(id);
     const profileId = getSceneProfileId();
 
@@ -175,9 +178,97 @@ export async function promptFromScene(messageId, signal) {
     } else {
         result = await generateRaw({ prompt, systemPrompt, responseLength: SCENE_RESPONSE_LENGTH });
     }
-    return String(result ?? '')
+    const text = String(result ?? '')
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
         .replace(/^["'\s]+|["'\s]+$/g, '')
         .replace(/\s*\n+\s*/g, ', ')
         .replace(/\s*,(\s*,)+/g, ',');
+    // 키는 요청을 보낸 시점의 채팅·메시지 내용으로 정해 두었으니, 그사이 채팅을 옮겨도 맞는 자리에 남는다
+    if (text && key) rememberScenePrompt(key, text);
+    return { text, link: key };
+}
+
+/**
+ * 메시지 내용이 바뀌었는지 알아보는 짧은 지문(스와이프·수정하면 달라진다)
+ * @param {string} text
+ */
+function fingerprint(text) {
+    let hash = 5381;
+    for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+    return `${text.length}:${hash >>> 0}`;
+}
+
+/*
+ * 써 둔 프롬프트 기록: 채팅 파일은 건드리지 않고 data/<사용자>/user/files/st-nanogpt-prompts.json 에 둔다
+ * (확장을 지우면 이 파일도 지운다). 키는 '채팅 ID|메시지 내용 지문'이라 앞 메시지를 지워 번호가 밀려도 맞고,
+ * 메시지를 고치거나 스와이프하면 지문이 달라져 새로 쓴다. 임시 채팅은 파일에 남기지 않고 메모리에만.
+ */
+const promptStore = createJsonStore(SCENE_PROMPTS_FILE, () => getSettings().scenePromptLimit);
+
+/** 설정창의 '기록 개수'용 */
+export const scenePromptRecords = { count: () => promptStore.count(), trim: () => promptStore.trim() };
+/** @type {Map<string, string>} */
+const tempPrompts = new Map();
+
+/** 설정 화면을 열기 전에 미리 읽어 둔다(기록 확인은 동기로 해야 해서) */
+export function preloadScenePrompts() {
+    return promptStore.preload();
+}
+
+/** 확장을 지울 때 */
+export function deleteScenePromptsFile() {
+    return promptStore.deleteFile();
+}
+
+/** @typedef {{ key: string, temp: boolean }} ScenePromptLink 메시지 하나의 프롬프트 기록 자리 */
+
+/**
+ * @param {ChatMessage|undefined} message
+ * @returns {ScenePromptLink|null}
+ */
+function scenePromptKey(message) {
+    if (!message) return null;
+    const chatId = getContext().getCurrentChatId?.();
+    const id = `${fingerprint(String(message.name ?? ''))}|${fingerprint(String(message.mes ?? ''))}`;
+    return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
+}
+
+/**
+ * 이 메시지로 전에 쓴 프롬프트. 메시지가 그 뒤로 고쳐졌거나 스와이프됐으면 null.
+ * @param {number} messageId
+ * @returns {string|null}
+ */
+export function getRememberedScenePrompt(messageId) {
+    const found = scenePromptKey(getContext().chat?.[messageId]);
+    if (!found) return null;
+    if (found.temp) return tempPrompts.get(found.key) ?? null;
+    return promptStore.peek(found.key)?.text ?? null;
+}
+
+/**
+ * 기록 자리에 지금 남아 있는 프롬프트
+ * @param {ScenePromptLink} found
+ * @returns {string|null}
+ */
+export function getRememberedPromptAt(found) {
+    return found.temp ? (tempPrompts.get(found.key) ?? null) : (promptStore.peek(found.key)?.text ?? null);
+}
+
+/**
+ * 지금 채팅의 이 메시지에 해당하는 기록 자리
+ * @param {number} messageId
+ * @returns {ScenePromptLink|null}
+ */
+export function scenePromptLinkFor(messageId) {
+    return scenePromptKey(getContext().chat?.[messageId]);
+}
+
+/**
+ * 기록을 덮어쓴다(자동생성 결과를 고친 뒤 생성했을 때 그 고친 버전으로)
+ * @param {ScenePromptLink} found
+ * @param {string} text
+ */
+export function rememberScenePrompt(found, text) {
+    if (found.temp) tempPrompts.set(found.key, text);
+    else promptStore.set(found.key, { text, createdAt: Date.now() });
 }

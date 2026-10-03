@@ -2,8 +2,10 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
-import { getImageMeta, removeImageMeta } from './image-meta.js';
+import { getContext } from '../../../../extensions.js';
+import { filterByChat, getImageMeta, removeImageMeta } from './image-meta.js';
 import { canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
+import { getSettings, setSetting } from './settings.js';
 
 /*
  * 갤러리 탭: 서버 갤러리(data/<사용자>/user/images/<폴더>/)의 이미지를 모아 본다.
@@ -55,6 +57,7 @@ export function mountGalleryView(container, { onUseMeta }) {
     const $grid = $root.find('.stng-gallery-grid');
     const $count = $root.find('.stng-gallery-count');
     const $empty = $root.find('.stng-gallery-empty');
+    const $scopeButtons = $root.find('.stng-seg-btn');
     const $viewer = $root.find('.stng-gallery-viewer');
     const $viewerImg = $viewer.find('img');
     const $send = $viewer.find('.stng-gallery-send');
@@ -72,8 +75,30 @@ export function mountGalleryView(container, { onUseMeta }) {
     /** 서버에 실제로 있는 폴더 @type {Set<string>} */
     let existingFolders = new Set();
 
+    // --- 보기 범위: '이 채팅'은 지금 채팅에서 만든 것만(생성 정보에 채팅이 기록된 이미지), '폴더 전체'는 다
+    const chatId = getContext().getCurrentChatId?.() || null;
+    /** @returns {'chat'|'all'} 임시 채팅처럼 채팅 ID 가 없으면 '이 채팅'은 쓸 수 없다 */
+    const scope = () => (chatId && getSettings().galleryScope === 'chat' ? 'chat' : 'all');
+
+    function renderScope() {
+        const current = scope();
+        $scopeButtons.each(function () {
+            const active = this.dataset.scope === current;
+            $(this).toggleClass('stng-active', active).attr('aria-pressed', String(active));
+        });
+        $scopeButtons.filter('[data-scope="chat"]').prop('disabled', !chatId);
+        // '이 채팅'은 지금 채팅의 캐릭터 폴더만 본다
+        if (current === 'chat') $folder.val(galleryFolder());
+        $folder.prop('disabled', current === 'chat');
+    }
+    $scopeButtons.on('click', async function () {
+        setSetting('galleryScope', this.dataset.scope);
+        renderScope();
+        await loadImages();
+    });
+
     async function loadFolders() {
-        const current = String($folder.val() || '') || galleryFolder();
+        const current = (scope() === 'chat' ? '' : String($folder.val() || '')) || galleryFolder();
         let folders = [];
         try {
             folders = await fetchFolders();
@@ -83,6 +108,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         existingFolders = new Set(folders);
         if (!folders.includes(current)) folders.unshift(current);
         $folder.empty().append(folders.map(f => new Option(f, f))).val(current);
+        renderScope();
     }
 
     async function loadImages() {
@@ -95,14 +121,18 @@ export function mountGalleryView(container, { onUseMeta }) {
         try {
             // 없는 폴더를 조회하면 ST 서버가 빈 폴더를 만들어 버리므로 조회하지 않는다
             const list = existingFolders.has(folder) ? await fetchImages(folder) : [];
+            const shown = scope() === 'chat' ? await filterByChat(folder, list, chatId) : list;
             if (token !== loadToken) return;
-            files = list;
+            files = shown;
         } catch (error) {
             if (token !== loadToken) return;
             console.warn(LOG_PREFIX, 'failed to list gallery images', error);
             files = [];
         }
-        $count.text(tr('gallery_count', '{0} images', files.length));
+        $count.text(scope() === 'chat' ? tr('gallery_count_chat', '{0} images from this chat', files.length) : tr('gallery_count', '{0} images', files.length));
+        $empty.find('span').text(scope() === 'chat'
+            ? tr('gallery_empty_chat', 'No images made in this chat yet. Images made before this view was added, or with the Image Generation extension, show up under Whole folder.')
+            : tr('gallery_empty', 'No images in this folder yet.'));
         $empty.prop('hidden', files.length > 0);
         $grid.append(files.map((file, i) => $('<button type="button" class="stng-gallery-thumb"></button>')
             .attr('title', file)
@@ -119,6 +149,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         $download.attr('href', url).attr('download', files[i]);
         $viewer.find('.stng-gallery-name').text(`${i + 1} / ${files.length} · ${files[i]}`);
         $send.prop('disabled', !canSendToChat());
+        $viewer.find('.stng-send-nochat').prop('hidden', canSendToChat());
         $viewer.prop('hidden', false);
         $grid.prop('hidden', true);
         $viewer[0].scrollIntoView({ block: 'nearest' });
@@ -210,7 +241,7 @@ export function mountGalleryView(container, { onUseMeta }) {
             removeImageMeta(path);
             files.splice(index, 1);
             $grid.children().eq(index).remove();
-            $count.text(tr('gallery_count', '{0} images', files.length));
+            $count.text(scope() === 'chat' ? tr('gallery_count_chat', '{0} images from this chat', files.length) : tr('gallery_count', '{0} images', files.length));
             $empty.prop('hidden', files.length > 0);
             // 지운 자리의 다음 이미지를 보여 주고, 다 지웠으면 목록으로
             if (files.length) openViewer(Math.min(index, files.length - 1));
