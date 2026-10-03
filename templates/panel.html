@@ -64,46 +64,50 @@
         </div>
 
         <div class="stng-gallery-viewer" hidden>
-            <img alt="" data-swipe-ignore="true" />
-            <small class="stng-muted stng-gallery-name"></small>
-            <div class="stng-gallery-nav">
-                <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-prev" title="Previous" data-i18n="[title]nanogpt_tools.previous"><i class="fa-solid fa-chevron-left"></i></button>
-                <button type="button" class="menu_button stng-btn stng-gallery-back">
-                    <i class="fa-solid fa-grip"></i>
-                    <span data-i18n="nanogpt_tools.gallery_back">All images</span>
-                </button>
-                <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-next" title="Next" data-i18n="[title]nanogpt_tools.next"><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="stng-gallery-card">
+                <img alt="" data-swipe-ignore="true" />
+                <small class="stng-muted stng-gallery-name"></small>
+                <div class="stng-gallery-nav">
+                    <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-prev" title="Previous" data-i18n="[title]nanogpt_tools.previous"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button type="button" class="menu_button stng-btn stng-gallery-back">
+                        <i class="fa-solid fa-grip"></i>
+                        <span data-i18n="nanogpt_tools.gallery_back">All images</span>
+                    </button>
+                    <button type="button" class="menu_button stng-btn stng-icon-btn stng-gallery-next" title="Next" data-i18n="[title]nanogpt_tools.next"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <!-- 이미지 탭 결과 버튼과 같은 순서. [다시]·[불러오기]는 생성 정보가 있는 이미지만 -->
+                <div class="stng-gallery-actions">
+                    <button type="button" class="menu_button stng-btn stng-gallery-regen" hidden>
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span data-i18n="nanogpt_tools.regenerate_short">Again</span>
+                    </button>
+                    <button type="button" class="menu_button stng-btn stng-gallery-send">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <!-- 글자는 gallery.js 가 넣는다(원래 메시지에 붙으면 '#12에 붙이기') --><span></span>
+                    </button>
+                    <a class="menu_button stng-btn stng-gallery-download" href="#" download>
+                        <i class="fa-solid fa-download"></i>
+                        <span data-i18n="nanogpt_tools.download">Save</span>
+                    </a>
+                    <button type="button" class="menu_button stng-btn stng-gallery-load" hidden>
+                        <i class="fa-solid fa-sliders"></i>
+                        <span data-i18n="nanogpt_tools.load_settings_short">Load</span>
+                    </button>
+                    <button type="button" class="menu_button stng-btn stng-gallery-delete">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span data-i18n="nanogpt_tools.delete">Delete</span>
+                    </button>
+                </div>
+                <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
             </div>
-            <div class="stng-gallery-actions">
-                <button type="button" class="menu_button stng-btn stng-gallery-send">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <!-- 글자는 gallery.js 가 넣는다(원래 메시지에 붙으면 '#12에 붙이기') --><span></span>
-                </button>
-                <a class="menu_button stng-btn stng-gallery-download" href="#" download>
-                    <i class="fa-solid fa-download"></i>
-                    <span data-i18n="nanogpt_tools.download">Save</span>
-                </a>
-                <button type="button" class="menu_button stng-btn stng-gallery-delete">
-                    <i class="fa-solid fa-trash-can"></i>
-                    <span data-i18n="nanogpt_tools.delete">Delete</span>
-                </button>
-            </div>
-            <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
 
             <!-- 생성 정보: 이 확장이 기록한 이미지만 있다. 내용은 gallery.js 가 채운다 -->
             <details class="stng-gallery-info" hidden>
-                <summary></summary>
+                <summary>
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span></span>
+                </summary>
                 <dl class="stng-meta-list"></dl>
-                <div class="stng-gallery-reuse">
-                    <button type="button" class="menu_button stng-btn stng-gallery-regen">
-                        <i class="fa-solid fa-rotate-right"></i>
-                        <span data-i18n="nanogpt_tools.regenerate">Generate again</span>
-                    </button>
-                    <button type="button" class="menu_button stng-btn stng-gallery-load">
-                        <i class="fa-solid fa-sliders"></i>
-                        <span data-i18n="nanogpt_tools.load_settings">Load settings</span>
-                    </button>
-                </div>
             </details>
             <small class="stng-muted stng-gallery-nometa" hidden data-i18n="nanogpt_tools.gallery_no_meta">No generation info for this image. Only images made with this extension after the info feature was added have it.</small>
         </div>

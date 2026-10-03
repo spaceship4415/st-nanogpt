@@ -150,6 +150,22 @@
     color: var(--SmartThemeQuoteColor);
 }
 
+.stng-gallery-empty.stng-notice {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 16px;
+    border-radius: 14px;
+    text-align: center;
+    opacity: 0.85;
+}
+
+.stng-gallery-empty.stng-notice i {
+    margin: 0;
+    font-size: 1.8em;
+    opacity: 0.8;
+}
+
 .stng-field {
     display: flex;
     flex-direction: column;
@@ -386,22 +402,34 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-card {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 12px;
+    border-radius: 14px;
     background-color: var(--black30a);
 }
 
 .stng-card-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.8em;
-    opacity: 0.7;
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+.stng-card-label i,
+.stng-bar-label i {
+    width: 1.1em;
+    color: var(--SmartThemeQuoteColor);
+    text-align: center;
 }
 
 .stng-card-value {
-    font-size: 1.35em;
+    font-size: 1.45em;
     font-weight: bold;
+    line-height: 1.2;
     font-variant-numeric: tabular-nums;
 }
 
@@ -415,10 +443,23 @@ body.stng-no-mes-button .stng_mes_scene {
     color: #5cb85c;
 }
 
+/* 구독 사용량 막대 묶음도 카드로 */
 .stng-bars {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 14px;
+    background-color: var(--black30a);
+}
+
+.stng-bar-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 600;
 }
 
 .stng-bar-head,
@@ -429,8 +470,10 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 .stng-bar-value {
+    font-size: 0.9em;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    opacity: 0.85;
 }
 
 .stng-bar-foot {
@@ -468,6 +511,7 @@ body.stng-no-mes-button .stng_mes_scene {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    padding: 0 2px;
 }
 
 /* 이미지 */
@@ -1100,10 +1144,19 @@ body.stng-no-mes-button .stng_mes_scene {
     aspect-ratio: 1;
     padding: 0;
     overflow: hidden;
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 8px;
+    border: 0;
+    border-radius: 10px;
     background-color: var(--black50a);
     cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.stng-gallery-thumb:hover {
+    filter: brightness(1.1);
+}
+
+.stng-gallery-thumb:active {
+    transform: scale(0.97);
 }
 
 .stng-gallery-thumb img {
@@ -1116,21 +1169,35 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-gallery-viewer {
     display: flex;
     flex-direction: column;
+    gap: 10px;
+}
+
+/* 이미지 탭 결과 카드와 같은 모양 */
+.stng-gallery-card {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 14px;
+    background-color: var(--black30a);
 }
 
 .stng-gallery-viewer img {
     display: block;
     width: 100%;
     /* 키 작은 폰에서도 아래 이름·넘기기·버튼 줄이 한 화면에 같이 보이게 */
-    max-height: min(65dvh, calc(100dvh - 290px));
+    max-height: min(60dvh, calc(100dvh - 320px));
+    min-height: 160px;
     object-fit: contain;
-    border-radius: 12px;
+    border-radius: 10px;
     background-color: var(--black50a);
     touch-action: pan-y;
 }
 
 .stng-gallery-name {
+    padding: 0 2px;
+    font-size: 0.8em;
     overflow-wrap: anywhere;
 }
 
@@ -1144,9 +1211,17 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 .stng-gallery-actions {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    display: flex;
+    gap: 4px;
+}
+
+.stng-gallery-actions > * {
+    flex: 1 1 0;
+}
+
+.stng-gallery-actions .stng-gallery-regen.menu_button {
+    color: var(--SmartThemeQuoteColor);
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 45%, var(--SmartThemeBorderColor));
 }
 
 /* 되돌릴 수 없는 동작이라 붉게 */
@@ -1158,17 +1233,22 @@ body.stng-no-mes-button .stng_mes_scene {
 
 .stng-gallery-actions .stng-btn.menu_button {
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     width: 100%;
     min-width: 0;
-    min-height: 52px;
-    padding: 6px 4px;
+    min-height: 54px;
+    padding: 6px 2px;
+    border-radius: 10px;
     white-space: normal;
     word-break: keep-all;
     text-align: center;
     text-decoration: none;
-    font-size: 0.85em;
+    font-size: 0.8em;
     line-height: 1.2;
+}
+
+.stng-gallery-actions .stng-btn.menu_button i {
+    font-size: 1.15em;
 }
 
 @media (min-width: 768px) {
@@ -1178,34 +1258,63 @@ body.stng-no-mes-button .stng_mes_scene {
 
     .stng-gallery-actions .stng-btn.menu_button {
         flex-direction: row;
-        gap: 8px;
+        gap: 6px;
         min-height: 44px;
         white-space: nowrap;
-        font-size: 0.9em;
+        font-size: 0.88em;
+    }
+
+    .stng-gallery-actions .stng-btn.menu_button i {
+        font-size: 1em;
     }
 }
 
 /* 생성 정보: 이름 위·값 아래(휴대폰), 프롬프트는 길어도 다 보이게 */
 .stng-gallery-info {
-    padding: 0 10px;
+    padding: 0 12px;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 10px;
+    border-radius: 12px;
+    background-color: color-mix(in srgb, var(--black30a) 50%, transparent);
 }
 
 .stng-gallery-info[open] {
     padding-bottom: 10px;
 }
 
-/* flex 면 text-overflow 가 안 먹어 '…' 없이 잘린다 */
 .stng-gallery-info > summary {
-    display: block;
-    padding: 12px 0;
-    line-height: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
     list-style: none;
-    overflow: hidden;
     cursor: pointer;
+}
+
+.stng-gallery-info > summary > i {
+    flex-shrink: 0;
+    color: var(--SmartThemeQuoteColor);
+}
+
+/* 긴 제목은 '…' 로(글자 칸에만 넘침 처리) */
+.stng-gallery-info > summary > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.stng-gallery-info > summary::after {
+    content: '\f078';
+    flex-shrink: 0;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.8em;
+    transition: transform 0.2s ease;
+}
+
+.stng-gallery-info[open] > summary::after {
+    transform: rotate(180deg);
 }
 
 .stng-gallery-info > summary::-webkit-details-marker {
@@ -1229,20 +1338,6 @@ body.stng-no-mes-button .stng_mes_scene {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
     user-select: text;
-}
-
-.stng-gallery-reuse {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-
-.stng-gallery-reuse .stng-btn.menu_button {
-    width: 100%;
-    min-width: 0;
-    white-space: normal;
-    word-break: keep-all;
-    font-size: 0.9em;
 }
 
 /* 생성 중 결과 자리: 고른 크기 비율로 미리 잡아 두고 지난 시간을 보여 준다 */

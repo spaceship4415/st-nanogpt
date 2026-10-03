@@ -264,7 +264,7 @@ function renderUsage(container) {
     const cards = $('<div class="stng-cards"></div>');
 
     const balance = $('<div class="stng-card stng-card-balance"></div>');
-    balance.append($('<div class="stng-card-label"></div>').text(tr('balance', 'Balance')));
+    balance.append(cardLabel('fa-wallet', tr('balance', 'Balance')));
     balance.append($('<div class="stng-card-value"></div>').text(formatUsd(credits.usd_balance)));
     if (credits.nano_balance > 0) {
         balance.append($('<div class="stng-card-sub"></div>').text(`${(+credits.nano_balance).toFixed(3)} NANO`));
@@ -273,7 +273,7 @@ function renderUsage(container) {
 
     const sub = credits.subscription?.active ? credits.subscription : null;
     const subCard = $('<div class="stng-card"></div>');
-    subCard.append($('<div class="stng-card-label"></div>').text(tr('subscription', 'Subscription')));
+    subCard.append(cardLabel('fa-crown', tr('subscription', 'Subscription')));
     if (sub) {
         subCard.append($('<div class="stng-card-value stng-ok"></div>').text(tr('sub_active', 'Active')));
         const end = sub.period?.currentPeriodEnd ? formatDate(sub.period.currentPeriodEnd) : '';
@@ -292,9 +292,9 @@ function renderUsage(container) {
 
     if (sub) {
         const bars = $('<div class="stng-bars"></div>');
-        bars.append(renderBar(tr('weekly_tokens', 'Input tokens this week'), sub.weekly_tokens, sub.limits.weeklyInputTokens));
-        bars.append(renderBar(tr('daily_tokens', 'Input tokens today'), sub.daily_tokens, sub.limits.dailyInputTokens));
-        bars.append(renderBar(tr('daily_images', 'Images today'), sub.daily_images, sub.limits.dailyImages));
+        bars.append(renderBar('fa-calendar-week', tr('weekly_tokens', 'Input tokens this week'), sub.weekly_tokens, sub.limits.weeklyInputTokens));
+        bars.append(renderBar('fa-sun', tr('daily_tokens', 'Input tokens today'), sub.daily_tokens, sub.limits.dailyInputTokens));
+        bars.append(renderBar('fa-image', tr('daily_images', 'Images today'), sub.daily_images, sub.limits.dailyImages));
         root.append(bars);
     }
 
@@ -303,17 +303,27 @@ function renderUsage(container) {
 }
 
 /**
+ * @param {string} icon
+ * @param {string} text
+ */
+function cardLabel(icon, text) {
+    return $('<div class="stng-card-label"></div>')
+        .append($('<i class="fa-solid"></i>').addClass(icon), $('<span></span>').text(text));
+}
+
+/**
+ * @param {string} icon
  * @param {string} label
  * @param {UsageBucket|null} bucket
  * @param {number} limit
  */
-function renderBar(label, bucket, limit) {
+function renderBar(icon, label, bucket, limit) {
     if (!bucket) return null;
 
     const percent = percentOf(bucket, limit);
     const row = $('<div class="stng-bar"></div>');
     const head = $('<div class="stng-bar-head"></div>');
-    head.append($('<span class="stng-bar-label"></span>').text(label));
+    head.append($('<span class="stng-bar-label"></span>').append($('<i class="fa-solid"></i>').addClass(icon), $('<span></span>').text(label)));
     head.append($('<span class="stng-bar-value"></span>').text(limit > 0
         ? `${formatCount(bucket.used)} / ${formatCount(limit)}`
         : formatCount(bucket.used)));
@@ -351,7 +361,7 @@ function renderFooter() {
         : '';
     footer.append($('<small class="stng-muted"></small>').text(when));
 
-    const button = $('<button type="button" class="menu_button stng-btn stng-refresh"></button>');
+    const button = $('<button type="button" class="menu_button stng-btn stng-btn-small stng-btn-quiet stng-refresh"></button>');
     button.append($('<i class="fa-solid fa-rotate"></i>').toggleClass('fa-spin', loading));
     button.append($('<span></span>').text(tr('refresh', 'Refresh')));
     button.prop('disabled', loading);

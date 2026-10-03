@@ -67,6 +67,8 @@ export function mountGalleryView(container, { onUseMeta }) {
     const $download = $viewer.find('.stng-gallery-download');
     const $delete = $viewer.find('.stng-gallery-delete');
     const $info = $viewer.find('.stng-gallery-info');
+    // [다시]·[불러오기]: 생성 정보가 있는 이미지만
+    const $reuse = $viewer.find('.stng-gallery-regen, .stng-gallery-load');
     const $noMeta = $viewer.find('.stng-gallery-nometa');
     /** 지금 보고 있는 이미지의 생성 정보 @type {import('./image-meta.js').ImageMeta|null} */
     let currentMeta = null;
@@ -293,6 +295,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         renderSendLabel();
         $info.prop('hidden', true);
         $noMeta.prop('hidden', true);
+        $reuse.prop('hidden', true);
         const meta = await getImageMeta(url);
         // 기다리는 사이 다른 이미지로 넘겼으면 버린다
         if (index < 0 || imageUrl(String($folder.val() || ''), files[index]) !== url) return;
@@ -302,7 +305,8 @@ export function mountGalleryView(container, { onUseMeta }) {
         }
         currentMeta = meta;
         renderSendLabel();
-        $info.find('summary').text(`${tr('gallery_info', 'Generation info')} · ${modelLabel(meta.model)} · ${meta.width}×${meta.height}`);
+        $reuse.prop('hidden', false);
+        $info.find('summary > span').text(`${tr('gallery_info', 'Generation info')} · ${modelLabel(meta.model)} · ${meta.width}×${meta.height}`);
         const $list = $info.find('.stng-meta-list').empty();
         /** @param {string} label @param {string} value */
         const row = (label, value) => {
@@ -310,7 +314,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         };
         row(tr('model', 'Model'), modelLabel(meta.model) === meta.model ? meta.model : `${modelLabel(meta.model)} (${meta.model})`);
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
-        row(`${tr('steps', 'Sampling steps')} · ${tr('scale', 'CFG scale')}`, `${meta.steps || '-'} · ${meta.scale || '-'}`);
+        row(`${tr('steps', 'Sampling steps')} · ${tr('scale', 'CFG scale')}`, meta.steps ? `${meta.steps} · ${meta.scale ?? '-'}` : '-');
         row(tr('prompt', 'Prompt'), meta.prompt);
         row(tr('prefix', 'Common prompt prefix'), meta.promptPrefix);
         row(tr('negative', 'Negative common prompt prefix'), meta.negativePrompt);
