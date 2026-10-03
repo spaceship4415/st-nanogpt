@@ -578,6 +578,7 @@ body.stng-no-mes-button .stng_mes_scene {
 
 .stng-adv-title {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 2px;
     min-height: 28px;
@@ -586,8 +587,21 @@ body.stng-no-mes-button .stng_mes_scene {
     letter-spacing: 0.01em;
 }
 
+/* 좁은 화면에서도 소제목이 '스/타/일'처럼 한 글자씩 꺾이지 않게. 자리가 모자라면 오른쪽 도구가 다음 줄로 */
 .stng-adv-title > span:first-child {
+    flex-shrink: 0;
+    white-space: nowrap;
     opacity: 0.75;
+}
+
+/* 스타일 고르기 줄: 드롭다운이 남는 폭을 다 쓰고, 버튼 세 개는 조금 좁게 */
+.stng-img-style-field .stng-row > .stng-img-style {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.stng-img-style-field .stng-row > .stng-icon-btn.menu_button {
+    width: 40px;
 }
 
 .stng-adv-title-tools {

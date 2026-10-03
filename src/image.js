@@ -698,7 +698,21 @@ export function mountImageView(container) {
         const name = matchingStyle();
         $style.val(name);
         $root.find('.stng-adv-style').text(name).prop('hidden', !name);
+        fitAffixes();
     }
+
+    /**
+     * 공통·부정 접두사 칸을 내용 길이에 맞춰 늘린다(긴 스타일도 스크롤 없이 보이게, 화면의 40% 까지).
+     * 고급이 접혀 있으면 높이를 잴 수 없어 펼칠 때 다시 맞춘다
+     */
+    function fitAffixes() {
+        for (const el of [$prefix[0], $negative[0]]) {
+            if (!(el instanceof HTMLTextAreaElement) || !el.offsetParent) continue;
+            el.style.height = 'auto';
+            el.style.height = `${Math.min(el.scrollHeight + 2, Math.round(window.innerHeight * 0.4))}px`;
+        }
+    }
+    $root.find('.stng-advanced').on('toggle', fitAffixes);
 
     /** @param {string} message @param {string} [value] */
     async function askName(message, value = '') {
