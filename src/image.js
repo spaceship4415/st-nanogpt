@@ -11,6 +11,7 @@ import { addInsert, removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { removeImageMeta, setImageMeta } from './image-meta.js';
 import { CHARACTER_SCENE, getRememberedPromptAt, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
+import { deleteSdStyle, getSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -562,6 +563,7 @@ export function mountImageView(container) {
         }
         $model.val(settings.model);
         fillModelInfo();
+        fillStyles();
     }
 
     /** 고른 모델에 맞춰 크기 선택지와 권장 스텝·CFG 안내를 다시 그린다 */
@@ -624,9 +626,83 @@ export function mountImageView(container) {
         return (text !== '' && Number.isFinite(value)) ? Math.max(min, Math.min(max, value)) : fallback;
     };
 
+    // --- 스타일(이미지 생성 확장과 같은 목록): 공통 접두사·부정 접두사를 이름 붙여 저장해 두고 골라 쓴다
+    const $style = $root.find('.stng-img-style');
+
+    /** 지금 두 칸과 내용이 같은 스타일 이름. 없으면 ''(저장 안 된 설정) */
+    function matchingStyle() {
+        const same = (/** @type {string} */ a, /** @type {string} */ b) => String(a ?? '').trim() === String(b ?? '').trim();
+        return getSdStyles()?.find(s => same(s.prefix, settings.promptPrefix) && same(s.negative, settings.negativePrompt))?.name ?? '';
+    }
+
+    function fillStyles() {
+        const styles = getSdStyles();
+        $root.find('.stng-img-style-field').prop('hidden', !styles);
+        if (!styles) return;
+        $style.empty()
+            .append(new Option(tr('style_none', '(Not saved)'), ''))
+            .append(styles.map(s => new Option(s.name, s.name)));
+        $style.val(matchingStyle());
+    }
+
+    /** @param {string} message @param {string} [value] */
+    async function askName(message, value = '') {
+        const input = await callGenericPopup(message, POPUP_TYPE.INPUT, value);
+        return input ? String(input).trim() : '';
+    }
+
+    $style.on('change', () => {
+        const style = getSdStyles()?.find(s => s.name === $style.val());
+        if (!style) return;
+        setSetting('promptPrefix', String(style.prefix ?? ''));
+        setSetting('negativePrompt', String(style.negative ?? ''));
+        $prefix.val(settings.promptPrefix);
+        $negative.val(settings.negativePrompt);
+    });
+
+    $root.find('.stng-img-style-save').on('click', async () => {
+        const name = await askName(tr('style_name_prompt', 'Style name:'), String($style.val() || ''));
+        if (!name) return;
+        const existing = getSdStyles()?.find(s => s.name === name);
+        // 다른 내용의 같은 이름을 덮어쓸 때만 묻는다
+        if (existing && name !== $style.val()) {
+            const ok = await callGenericPopup(tr('style_overwrite', 'Overwrite the style "{0}" with the current values?', name), POPUP_TYPE.CONFIRM);
+            if (ok !== POPUP_RESULT.AFFIRMATIVE) return;
+        }
+        saveSdStyle(name, settings.promptPrefix, settings.negativePrompt);
+        fillStyles();
+        toastr.success(tr('style_saved', 'Saved the style "{0}".', name));
+    });
+
+    $root.find('.stng-img-style-rename').on('click', async () => {
+        const oldName = String($style.val() || '');
+        if (!oldName) return toastr.info(tr('style_pick_first', 'Choose a saved style first.'));
+        const name = await askName(tr('style_new_name', 'New style name:'), oldName);
+        if (!name || name === oldName) return;
+        if (getSdStyles()?.some(s => s.name === name)) return toastr.error(tr('style_exists', 'A style with that name already exists.'));
+        renameSdStyle(oldName, name);
+        fillStyles();
+    });
+
+    $root.find('.stng-img-style-delete').on('click', async () => {
+        const name = String($style.val() || '');
+        if (!name) return toastr.info(tr('style_pick_first', 'Choose a saved style first.'));
+        const ok = await callGenericPopup(tr('style_delete_confirm', 'Delete the style "{0}"?', name), POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
+        if (ok !== POPUP_RESULT.AFFIRMATIVE) return;
+        // 지워도 두 칸의 내용은 그대로 둔다(지금 쓰는 값이 사라지지 않게)
+        deleteSdStyle(name);
+        fillStyles();
+    });
+
     $size.on('change', () => setSetting('size', String($size.val())));
-    $prefix.on('input', () => setSetting('promptPrefix', String($prefix.val())));
-    $negative.on('input', () => setSetting('negativePrompt', String($negative.val())));
+    $prefix.on('input', () => {
+        setSetting('promptPrefix', String($prefix.val()));
+        $style.val(matchingStyle());
+    });
+    $negative.on('input', () => {
+        setSetting('negativePrompt', String($negative.val()));
+        $style.val(matchingStyle());
+    });
     $steps.on('change', () => {
         const param = getModelInfo(settings.model)?.steps;
         setSetting('steps', Math.round(readNumber($steps, 30, param?.min ?? 1, param?.max ?? 150)));

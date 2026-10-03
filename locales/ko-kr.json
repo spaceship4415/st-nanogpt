@@ -205,5 +205,18 @@
     "nanogpt_tools.gallery_bulk_deleted": "이미지 {0}장을 삭제했습니다.",
     "nanogpt_tools.recommended": "이 모델 권장값: {0} · {1}",
     "nanogpt_tools.param_unused": "{0} 안 씀",
-    "nanogpt_tools.recommended_apply": "권장값으로"
+    "nanogpt_tools.recommended_apply": "권장값으로",
+    "nanogpt_tools.style": "스타일",
+    "nanogpt_tools.style_save": "스타일 저장",
+    "nanogpt_tools.style_rename": "스타일 이름 바꾸기",
+    "nanogpt_tools.style_delete": "스타일 삭제",
+    "nanogpt_tools.style_hint": "공통 프롬프트 접두사와 부정 접두사를 묶어 저장합니다. ST 이미지 생성 확장의 스타일 목록과 같이 씁니다.",
+    "nanogpt_tools.style_none": "(저장 안 됨)",
+    "nanogpt_tools.style_name_prompt": "스타일 이름:",
+    "nanogpt_tools.style_new_name": "새 스타일 이름:",
+    "nanogpt_tools.style_overwrite": "\"{0}\" 스타일을 지금 값으로 덮어쓸까요?",
+    "nanogpt_tools.style_saved": "\"{0}\" 스타일을 저장했습니다.",
+    "nanogpt_tools.style_pick_first": "저장된 스타일을 먼저 고르세요.",
+    "nanogpt_tools.style_exists": "같은 이름의 스타일이 이미 있습니다.",
+    "nanogpt_tools.style_delete_confirm": "\"{0}\" 스타일을 지울까요?"
 }

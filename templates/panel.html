@@ -184,6 +184,23 @@
                     <i class="fa-solid fa-file-import"></i>
                     <span data-i18n="nanogpt_tools.sd_import">Import from Image Generation</span>
                 </button>
+                <!-- ST 이미지 생성 확장과 같은 스타일 목록. 그 확장이 없으면 image.js 가 숨긴다 -->
+                <div class="stng-field stng-img-style-field">
+                    <span class="stng-field-label" data-i18n="nanogpt_tools.style">Style</span>
+                    <span class="stng-row">
+                        <select class="text_pole stng-img-style"></select>
+                        <button type="button" class="menu_button stng-btn stng-icon-btn stng-img-style-save" title="Save style" data-i18n="[title]nanogpt_tools.style_save">
+                            <i class="fa-solid fa-save"></i>
+                        </button>
+                        <button type="button" class="menu_button stng-btn stng-icon-btn stng-img-style-rename" title="Rename style" data-i18n="[title]nanogpt_tools.style_rename">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                        <button type="button" class="menu_button stng-btn stng-icon-btn stng-img-style-delete" title="Delete style" data-i18n="[title]nanogpt_tools.style_delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </span>
+                    <small class="stng-muted" data-i18n="nanogpt_tools.style_hint">Saves the common prompt prefix and negative prompt together. Shared with the Image Generation extension's style list.</small>
+                </div>
                 <label class="stng-field">
                     <span class="stng-field-label" data-i18n="nanogpt_tools.prefix">Common prompt prefix</span>
                     <textarea class="text_pole stng-img-prefix" rows="4" placeholder="masterpiece, best quality, ..."></textarea>
