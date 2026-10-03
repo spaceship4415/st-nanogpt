@@ -66,20 +66,53 @@ export function listSceneMessages(extraId = null) {
  * @returns {{ id: number, name: string, text: string, persona?: string }|null}
  */
 export function getScenePreview(id) {
-    if (id === CHARACTER_SCENE) {
-        const characters = characterDescriptions();
-        if (!characters.length) return null;
-        // 내용은 길어서 이름만: 어떤 캐릭터와(함께 보낸다면) 어떤 페르소나인지
-        const context = getContext();
-        const persona = getSettings().sceneIncludeCards && String(context.powerUserSettings?.persona_description ?? '').trim() ? context.name1 : '';
-        return { id, name: characters.map(c => c.name).join(', '), text: '', persona };
+    if (isPortraitScene(id)) {
+        // 내용은 길어서 이름만: 어떤 캐릭터와 어떤 페르소나를 그리는지. 그릴 설명이 없으면 null
+        const { characters, persona } = portraitSubjects(id);
+        if (id !== PERSONA_SCENE && !characters.length) return null;
+        if (id !== CHARACTER_SCENE && !persona) return null;
+        return { id, name: characters.map(c => c.name).join(', '), text: '', persona: persona ? getContext().name1 : '' };
     }
     const message = (getContext().chat ?? [])[id];
     return isSceneCandidate(message) ? { id, name: message.name, text: plain(message.mes) } : null;
 }
 
-/** 드롭다운의 '캐릭터 설정만' — 메시지 대신 캐릭터 설명만으로 모습을 그린다 */
+/*
+ * 드롭다운의 '설명으로 그리기' — 메시지 대신 설명만으로 모습을 그린다(아바타·프로필 그림용).
+ * 메시지 자동생성의 '캐릭터·페르소나 설명 포함' 설정과 상관없이 고른 사람만 그린다
+ */
+/** 캐릭터만(그룹이면 멤버 전원) */
 export const CHARACTER_SCENE = -2;
+/** 페르소나만 */
+export const PERSONA_SCENE = -3;
+/** 캐릭터 + 페르소나 함께 */
+export const BOTH_SCENE = -4;
+
+/** @param {number} id */
+export function isPortraitScene(id) {
+    return id === CHARACTER_SCENE || id === PERSONA_SCENE || id === BOTH_SCENE;
+}
+
+/** 지금 페르소나 설명(없으면 '') */
+function personaDescription() {
+    return substituteParams(String(getContext().powerUserSettings?.persona_description ?? '')).trim();
+}
+
+/** 설명으로 그릴 수 있는 것: 캐릭터 설명이 있는지, 페르소나 설명이 있는지 */
+export function portraitAvailability() {
+    return { character: characterDescriptions().length > 0, persona: !!personaDescription() };
+}
+
+/**
+ * 설명으로 그릴 때 들어갈 사람들
+ * @param {number} id CHARACTER_SCENE | PERSONA_SCENE | BOTH_SCENE
+ */
+function portraitSubjects(id) {
+    return {
+        characters: id === PERSONA_SCENE ? [] : characterDescriptions(),
+        persona: id === CHARACTER_SCENE ? '' : personaDescription(),
+    };
+}
 
 /** 장면 후보 중 가장 최근 메시지 번호, 없으면 -1 */
 export function lastSceneMessageId() {
@@ -115,14 +148,13 @@ function buildScenePrompt(messageId) {
     const settings = getSettings();
     const chat = context.chat ?? [];
 
-    // 캐릭터 설정만: 채팅 내용 없이 캐릭터 설명(+설정에 따라 페르소나)으로 모습을 그린다
-    if (messageId === CHARACTER_SCENE) {
-        const characters = characterDescriptions();
-        if (!characters.length) throw new Error(tr('scene_no_card', 'This character has no description to draw from.'));
+    // 설명으로 그리기: 채팅 내용 없이 고른 사람(캐릭터 / 페르소나 / 둘 다)의 설명으로 모습을 그린다
+    if (isPortraitScene(messageId)) {
+        const { characters, persona } = portraitSubjects(messageId);
+        if (messageId !== PERSONA_SCENE && !characters.length) throw new Error(tr('scene_no_card', 'This character has no description to draw from.'));
+        if (messageId !== CHARACTER_SCENE && !persona) throw new Error(tr('scene_no_persona', 'Your current persona has no description to draw from.'));
         const parts = characters.map(c => `[Character: ${c.name}]\n${c.description}`);
-        const persona = settings.sceneIncludeCards ? substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim() : '';
         if (persona) parts.push(`[User: ${context.name1}]\n${persona}`);
-        // 페르소나도 보냈으면 함께 그린다(안 그러면 참고만 하고 캐릭터만 그린다)
         const subjects = [...characters.map(c => c.name), ...(persona ? [context.name1] : [])];
         parts.push(subjects.length > 1
             ? `[Scene to illustrate]\nA portrait of ${subjects.join(' and ')} together as described above, showing each one's appearance and clothing.`
@@ -190,7 +222,7 @@ export function getSceneProfileId() {
  * @returns {Promise<{ text: string, link: ScenePromptLink|null }>} 쓴 프롬프트와, 그 메시지 기록 자리(고친 뒤 생성하면 덮어쓰려고)
  */
 export async function promptFromScene(messageId, signal) {
-    const id = messageId === CHARACTER_SCENE ? CHARACTER_SCENE
+    const id = isPortraitScene(messageId) ? messageId
         : Number.isInteger(messageId) && messageId >= 0 ? messageId : lastSceneMessageId();
     if (id === -1) throw new Error(tr('scene_no_messages', 'This chat has no messages to draw from.'));
 
@@ -309,15 +341,15 @@ export function getRememberedPromptAt(found) {
  * @returns {ScenePromptLink|null}
  */
 export function scenePromptLinkFor(messageId) {
-    if (messageId === CHARACTER_SCENE) {
-        // 캐릭터 설명(함께 그리는 페르소나 포함)이 바뀌면 지문이 달라져 새로 쓴다
-        const characters = characterDescriptions();
-        if (!characters.length) return null;
+    if (isPortraitScene(messageId)) {
+        // 그리는 사람들의 설명이 바뀌면 지문이 달라져 새로 쓴다. 종류마다 따로 기억한다
+        const { characters, persona } = portraitSubjects(messageId);
+        if (!characters.length && !persona) return null;
         const context = getContext();
         const chatId = context.getCurrentChatId?.();
-        const persona = getSettings().sceneIncludeCards ? substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim() : '';
         const source = characters.map(c => `${c.name}\n${c.description}`).join('\n') + (persona ? `\n${context.name1}\n${persona}` : '');
-        const id = `char|${fingerprint(source)}`;
+        const kind = { [CHARACTER_SCENE]: 'char', [PERSONA_SCENE]: 'persona', [BOTH_SCENE]: 'both' }[messageId];
+        const id = `${kind}|${fingerprint(source)}`;
         return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
     }
     return scenePromptKey(getContext().chat?.[messageId]);

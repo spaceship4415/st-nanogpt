@@ -172,7 +172,7 @@
     "nanogpt_tools.send_no_chat": "채팅을 열면 채팅에 보낼 수 있습니다.",
     "nanogpt_tools.saved_in_folder": "{0} 갤러리에 저장됨",
     "nanogpt_tools.prompt_expand": "프롬프트 칸 크게 보기",
-    "nanogpt_tools.scene_character": "캐릭터 설정만 (메시지 없이)",
+    "nanogpt_tools.scene_character": "캐릭터만 (설명으로)",
     "nanogpt_tools.scene_character_preview": "캐릭터: {0}",
     "nanogpt_tools.scene_working_character": "캐릭터 설정으로 프롬프트를 쓰는 중…\n버튼을 다시 누르면 취소합니다.",
     "nanogpt_tools.scene_no_card": "이 캐릭터에는 그릴 설명이 없습니다.",
@@ -235,5 +235,8 @@
     "nanogpt_tools.style_import_how": "이 파일의 스타일을 지금 목록에 더할까요, 아니면 지금 목록을 이 파일로 바꿀까요?",
     "nanogpt_tools.style_import_add": "더하기",
     "nanogpt_tools.style_import_replace": "바꾸기 (지금 {0}개 지움)",
-    "nanogpt_tools.style_replaced": "스타일 목록을 파일의 {0}개로 바꿨습니다."
+    "nanogpt_tools.style_replaced": "스타일 목록을 파일의 {0}개로 바꿨습니다.",
+    "nanogpt_tools.scene_persona": "페르소나만 (설명으로)",
+    "nanogpt_tools.scene_both": "캐릭터 + 페르소나 (설명으로)",
+    "nanogpt_tools.scene_no_persona": "지금 페르소나에 설명이 없어 그릴 수 없습니다."
 }

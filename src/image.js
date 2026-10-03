@@ -10,7 +10,7 @@ import { tr } from './i18n.js';
 import { addInsert, removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { removeImageMeta, setImageMeta } from './image-meta.js';
-import { CHARACTER_SCENE, getRememberedPromptAt, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
+import { BOTH_SCENE, CHARACTER_SCENE, PERSONA_SCENE, getRememberedPromptAt, isPortraitScene, portraitAvailability, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
 import { deleteSdStyle, exportSdStyles, getSdStyles, importSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
@@ -33,6 +33,9 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {string|null} savedUrl 채팅에 보내려고 서버에 저장한 경로(같은 이미지를 두 번 올리지 않게)
  * @property {boolean} [sent] 채팅에 보냈는지(지울 때 확인을 받는다)
  */
+
+/** 자동생성 드롭다운의 '설명으로 그리기' 값 @type {Record<string, string>} */
+const PORTRAIT_VALUES = { [CHARACTER_SCENE]: 'char', [PERSONA_SCENE]: 'persona', [BOTH_SCENE]: 'both' };
 
 /** 이번 세션에서 만든 이미지(최근 것이 앞). 새로고침하면 사라진다 @type {GeneratedImage[]} */
 const sessionImages = [];
@@ -936,12 +939,24 @@ export function mountImageView(container) {
     // --- 프롬프트 자동생성: 기준 메시지(기본은 최신)를 골라 그 장면을 프롬프트로
     function fillSceneMessages(selectedId = null) {
         const messages = listSceneMessages(selectedId);
-        // 메시지가 없어도 '캐릭터 설정만'은 쓸 수 있으니 채팅만 열려 있으면 된다
+        // 메시지가 없어도 '설명으로 그리기'는 쓸 수 있으니 채팅만 열려 있으면 된다
         const hasChat = canSendToChat();
+        const can = portraitAvailability();
+        /** @param {string} label @param {string} value @param {boolean} enabled 설명이 없으면 고를 수 없게 */
+        const portrait = (label, value, enabled) => {
+            const option = new Option(label, value);
+            option.disabled = !enabled;
+            return option;
+        };
         $sceneMessage.empty().append(new Option(tr('scene_latest', 'Latest message'), 'last'));
-        $sceneMessage.append(new Option(tr('scene_character', 'Character only (no message)'), 'char'));
+        $sceneMessage.append(
+            portrait(tr('scene_character', 'Character only (from description)'), 'char', can.character),
+            portrait(tr('scene_persona', 'Persona only (from description)'), 'persona', can.persona),
+            portrait(tr('scene_both', 'Character + persona (from descriptions)'), 'both', can.character && can.persona),
+        );
         $sceneMessage.append(messages.map(m => new Option(m.label, String(m.id))));
-        $sceneMessage.val(selectedId === CHARACTER_SCENE ? 'char'
+        const portraitValue = PORTRAIT_VALUES[String(selectedId)];
+        $sceneMessage.val(portraitValue && !$sceneMessage.find(`option[value="${portraitValue}"]`).prop('disabled') ? portraitValue
             : selectedId !== null && messages.some(m => m.id === selectedId) ? String(selectedId) : 'last');
         $sceneMessage.prop('disabled', !hasChat);
         $scene.prop('disabled', !hasChat || !!controller);
@@ -955,7 +970,8 @@ export function mountImageView(container) {
     /** 드롭다운에서 고른 메시지 번호('최신'이면 실제 번호) */
     function selectedSceneId() {
         const value = String($sceneMessage.val() ?? 'last');
-        if (value === 'char') return CHARACTER_SCENE;
+        const portraitId = Object.entries(PORTRAIT_VALUES).find(([, v]) => v === value)?.[0];
+        if (portraitId !== undefined) return Number(portraitId);
         return value === 'last' ? lastSceneMessageId() : Number(value);
     }
 
@@ -969,12 +985,12 @@ export function mountImageView(container) {
         const preview = $sceneMessage.prop('disabled') ? null : getScenePreview(id);
         $scenePreview.prop('hidden', !preview);
         if (preview) {
-            const isCharacter = preview.id === CHARACTER_SCENE;
-            $scenePreview.find('.stng-scene-preview-name').text(isCharacter
-                ? tr('scene_character_preview', 'Character: {0}', preview.name)
-                : `#${preview.id} ${preview.name}`);
-            // 캐릭터 설정만: 내용 대신 함께 보낼 페르소나 이름만(안 보내면 줄을 숨김)
-            const text = isCharacter ? (preview.persona ? tr('scene_persona_preview', 'Persona: {0}', preview.persona) : '') : preview.text;
+            const isPortrait = isPortraitScene(preview.id);
+            const characterLine = preview.name ? tr('scene_character_preview', 'Character: {0}', preview.name) : '';
+            const personaLine = preview.persona ? tr('scene_persona_preview', 'Persona: {0}', preview.persona) : '';
+            // 설명으로 그리기: 내용 대신 그릴 사람 이름만(첫 줄 캐릭터, 둘째 줄 페르소나. 페르소나만이면 첫 줄)
+            $scenePreview.find('.stng-scene-preview-name').text(isPortrait ? (characterLine || personaLine) : `#${preview.id} ${preview.name}`);
+            const text = isPortrait ? (characterLine ? personaLine : '') : preview.text;
             $scenePreview.find('.stng-scene-preview-text').text(text).prop('hidden', !text);
         }
         const remembered = preview ? getRememberedScenePrompt(id) : null;
@@ -1052,7 +1068,7 @@ export function mountImageView(container) {
         $prompt.prop('readonly', busy);
         $promptOverlay.prop('hidden', !busy);
         if (busy) {
-            $promptOverlay.find('span').text(messageId === CHARACTER_SCENE
+            $promptOverlay.find('span').text(isPortraitScene(messageId)
                 ? tr('scene_working_character', 'Writing a prompt from the character description…\nTap the button again to cancel.')
                 : tr('scene_working', 'Writing a prompt from message #{0}…\nTap the button again to cancel.', messageId));
         }
@@ -1107,7 +1123,7 @@ export function mountImageView(container) {
             if (sceneBusy) return;
             setAutoOpen(true);
             // 숨김·빈 메시지는 그릴 대상이 아니다(조용히 '최신 메시지'로 바뀌어 작성되지 않게 알리고 멈춘다)
-            if (messageId !== CHARACTER_SCENE && !getScenePreview(messageId)) {
+            if (!isPortraitScene(messageId) && !getScenePreview(messageId)) {
                 fillSceneMessages();
                 toastr.warning(tr('scene_hidden_message', 'Hidden messages cannot be drawn.'));
                 return;
