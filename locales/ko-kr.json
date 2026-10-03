@@ -192,7 +192,7 @@
     "nanogpt_tools.insert_remove": "이 메시지에서 빼기(그림은 갤러리에 남음)",
     "nanogpt_tools.no_message": "그 메시지가 더 이상 없습니다.",
     "nanogpt_tools.chat_changed": "이미지를 만드는 사이 채팅이 바뀌어 채팅에 넣지 않았습니다. 갤러리에 있습니다.",
-    "nanogpt_tools.scene_hidden_message": "숨김 메시지는 그릴 수 없습니다.",
+    "nanogpt_tools.scene_hidden_message": "이 메시지는 그릴 수 없습니다(그림만 있는 메시지나 ST 안내).",
     "nanogpt_tools.scene_profile_failed": "연결 프로필 요청이 실패했습니다: {0}",
     "nanogpt_tools.gallery_more": "더 보기 ({0} / {1})",
     "nanogpt_tools.gallery_select": "선택",

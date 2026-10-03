@@ -1158,7 +1158,7 @@ export function mountImageView(container) {
             // 숨김·빈 메시지는 그릴 대상이 아니다(조용히 '최신 메시지'로 바뀌어 작성되지 않게 알리고 멈춘다)
             if (!isPortraitScene(messageId) && !getScenePreview(messageId)) {
                 fillSceneMessages();
-                toastr.warning(tr('scene_hidden_message', 'Hidden messages cannot be drawn.'));
+                toastr.warning(tr('scene_hidden_message', 'This message cannot be drawn (an image-only message or a SillyTavern notice).'));
                 return;
             }
             fillSceneMessages(messageId);

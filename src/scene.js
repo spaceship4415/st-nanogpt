@@ -19,11 +19,26 @@ import { getSettings } from './settings.js';
 const MESSAGE_LIST_LIMIT = 5;
 
 /**
- * 장면으로 고를 수 있는 메시지인지. 숨김(시스템) 메시지와 빈 메시지는 뺀다.
+ * 보이는 롤플 메시지인지(숨김·빈 메시지 제외). '최신 메시지'와 앞 메시지(맥락)는 이것만 쓴다:
+ * 숨긴 메시지는 AI 가 안 보게 하려고 숨겼을 수 있어서
  * @param {ChatMessage} message
  */
 function isSceneCandidate(message) {
     return !!message && !message.is_system && !!String(message.mes ?? '').trim();
+}
+
+/**
+ * 그 메시지를 그릴 수 있는지. 보이는 메시지에 더해, 사용자가 숨긴 롤플 메시지(/hide)도 그린다.
+ * 숨김 메시지 중 ST 안내(종류가 있는 시스템 메시지, 내레이터 제외)와 그림만 있는 메시지(채팅에 보낸 이미지)는 뺀다
+ * @param {ChatMessage} message
+ */
+export function isDrawableMessage(message) {
+    if (!message || !String(message.mes ?? '').trim()) return false;
+    if (!message.is_system) return true;
+    const type = message.extra?.type;
+    if (type && type !== 'narrator') return false;
+    const imageOnly = Array.isArray(message.extra?.media) && message.extra.media.length > 0 && message.extra?.inline_image === false;
+    return !imageOnly;
 }
 
 /** @param {string} text */
@@ -40,7 +55,9 @@ function plain(text) {
  */
 function toOption(id, message) {
     const preview = plain(message.mes);
-    return { id, label: `#${id} ${message.name}: ${preview.length > 28 ? `${preview.slice(0, 28)}…` : preview}` };
+    // 숨긴 메시지는 눈 표시로 구분한다
+    const hidden = message.is_system ? '👁\u200d🗨 ' : '';
+    return { id, label: `${hidden}#${id} ${message.name}: ${preview.length > 28 ? `${preview.slice(0, 28)}…` : preview}` };
 }
 
 /**
@@ -52,9 +69,9 @@ export function listSceneMessages(extraId = null) {
     const chat = getContext().chat ?? [];
     const result = [];
     for (let id = chat.length - 1; id >= 0 && result.length < MESSAGE_LIST_LIMIT; id--) {
-        if (isSceneCandidate(chat[id])) result.push(toOption(id, chat[id]));
+        if (isDrawableMessage(chat[id])) result.push(toOption(id, chat[id]));
     }
-    if (extraId !== null && isSceneCandidate(chat[extraId]) && !result.some(m => m.id === extraId)) {
+    if (extraId !== null && isDrawableMessage(chat[extraId]) && !result.some(m => m.id === extraId)) {
         result.push(toOption(extraId, chat[extraId]));
     }
     return result;
@@ -74,7 +91,7 @@ export function getScenePreview(id) {
         return { id, name: characters.map(c => c.name).join(', '), text: '', persona: persona ? getContext().name1 : '' };
     }
     const message = (getContext().chat ?? [])[id];
-    return isSceneCandidate(message) ? { id, name: message.name, text: plain(message.mes) } : null;
+    return isDrawableMessage(message) ? { id, name: message.name, text: plain(message.mes) } : null;
 }
 
 /*
@@ -163,7 +180,7 @@ function buildScenePrompt(messageId) {
     }
 
     const target = chat[messageId];
-    if (!isSceneCandidate(target)) throw new Error(tr('scene_no_message', 'That message cannot be used.'));
+    if (!isDrawableMessage(target)) throw new Error(tr('scene_no_message', 'That message cannot be used.'));
 
     const parts = [];
     if (settings.sceneIncludeCards) {
