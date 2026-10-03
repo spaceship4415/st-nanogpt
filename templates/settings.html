@@ -20,8 +20,21 @@
                     <input id="st_nanogpt_badge" type="checkbox" data-setting="badge" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge">Show a usage badge on screen</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_hint">A small button just above the message box. Tap it to open the panel. Hidden while no NanoGPT key is saved.</small>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_hint">A small floating button. Tap it to open the panel. Hidden while no NanoGPT key is saved.</small>
                     </span>
+                </label>
+
+                <label class="stng-field" for="st_nanogpt_badge_position">
+                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge_position">Badge position</span>
+                    <select id="st_nanogpt_badge_position" class="text_pole" data-setting="badgePosition">
+                        <option value="top-left" data-i18n="nanogpt_tools.badge_position_top_left">Top left</option>
+                        <option value="top-center" data-i18n="nanogpt_tools.badge_position_top_center">Top center</option>
+                        <option value="top-right" data-i18n="nanogpt_tools.badge_position_top_right">Top right</option>
+                        <option value="bottom-left" data-i18n="nanogpt_tools.badge_position_bottom_left">Bottom left</option>
+                        <option value="bottom-center" data-i18n="nanogpt_tools.badge_position_bottom_center">Bottom center</option>
+                        <option value="bottom-right" data-i18n="nanogpt_tools.badge_position_bottom_right">Bottom right</option>
+                    </select>
+                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_position_hint">Top is just below the top bar, bottom is just above the message box.</small>
                 </label>
 
                 <label class="stng-field" for="st_nanogpt_badge_content">

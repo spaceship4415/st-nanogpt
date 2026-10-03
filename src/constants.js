@@ -22,12 +22,17 @@ export const SIZE_PRESETS = Object.freeze([
 
 export const DEFAULT_SCENE_PROMPT = 'Ignore previous instructions. Describe the current scene of the story as a comma-separated list of short keywords for an image generator: characters with their appearance, clothing, pose and expression, then the place, lighting and mood. Write it in English. Output only the keyword list, nothing else.';
 
+/** 배지 위치 '세로-가로'. 설정 화면의 선택지 순서와 같다 */
+export const BADGE_POSITIONS = Object.freeze(['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right']);
+
 export const SETTINGS_VERSION = 1;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
     // 화면에 떠 있는 잔액 배지
     badge: true,
+    // 배지 위치(BADGE_POSITIONS): 상단 = 상단바 바로 아래 / 하단 = 입력창 바로 위
+    badgePosition: 'top-right',
     // 배지에 보여 줄 것: 'balance' | 'subscription' | 'both'
     badgeContent: 'both',
     // NanoGPT 로 채팅 응답을 받거나 이미지를 만든 뒤 사용량을 자동으로 새로고침

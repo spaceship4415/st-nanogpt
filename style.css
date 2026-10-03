@@ -112,7 +112,11 @@
     min-height: 0;
 }
 
-/* ── 떠 있는 배지 ── 입력창 바로 위 오른쪽(채팅 마지막 줄 끝 위에 겹친다) */
+/* ── 떠 있는 배지 ──
+   하단(기본 규칙): #form_sheld 맨 앞의 높이 0 기준점에서 입력창 위로 띄운다.
+   .stng-badge-top: 채팅 영역(#sheld) 맨 위 = 상단바 바로 아래.
+   #sheld 보다 위에 뜨는 상단 패널(z 3000 대)은 가리지 않는다.
+   가로 위치는 .stng-badge-left / -center / -right */
 .stng-badge-anchor {
     position: relative;
     height: 0;
@@ -139,6 +143,22 @@
     box-shadow: 0 1px 4px var(--black30a);
     opacity: 0.85;
     cursor: pointer;
+}
+
+.stng-badge.stng-badge-top {
+    top: 6px;
+    bottom: auto;
+}
+
+.stng-badge.stng-badge-left {
+    right: auto;
+    left: 8px;
+}
+
+.stng-badge.stng-badge-center {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 /* 보이는 크기는 작게, 누르는 영역은 44px */

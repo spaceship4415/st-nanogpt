@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { DEFAULT_SETTINGS, MODULE_NAME } from './constants.js';
+import { BADGE_POSITIONS, DEFAULT_SETTINGS, MODULE_NAME } from './constants.js';
 
 /**
  * 저장된 설정을 읽어 빠진 값을 기본값으로 채운다.
@@ -14,6 +14,11 @@ export function loadSettings() {
         if (typeof settings[key] !== typeof value) {
             settings[key] = value;
         }
+    }
+
+    // 선택지에 없는 값이면 드롭다운이 빈칸으로 보이므로 기본값으로
+    if (!BADGE_POSITIONS.includes(settings.badgePosition)) {
+        settings.badgePosition = DEFAULT_SETTINGS.badgePosition;
     }
 
     extension_settings[MODULE_NAME] = settings;

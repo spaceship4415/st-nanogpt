@@ -8,7 +8,7 @@ It only uses the NanoGPT endpoints already in SillyTavern. Your API key stays in
 
 ## Features
 
-- **Usage badge**: a small button above the message box showing your balance and this week's subscription usage, e.g. `$12.35 · Wk 42%`. Tap it to open the panel.
+- **Usage badge**: a small floating button below the top bar or above the message box (left, center or right) showing your balance and this week's subscription usage, e.g. `$12.35 · Wk 42%`. Tap it to open the panel.
 - **Usage tab**: USD/NANO balance, subscription status and end date, and progress bars for weekly tokens, daily tokens and daily images, with when each one resets.
 - **Auto refresh**: after each reply from NanoGPT and each generated image (at most every 15 seconds).
 - **Image tab**: pick a model and size, write a prompt or have your chat model write one from the current scene (**From chat**), then generate. You can send the result to the chat, save it, or reuse its prompt. Images made this session are kept as thumbnails.
