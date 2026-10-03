@@ -3,6 +3,7 @@ import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js
 import { LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
 import { removeInsertsByUrl } from './inserts.js';
+import { onHorizontalSwipe } from './gestures.js';
 import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { modelLabel } from './api.js';
@@ -233,15 +234,8 @@ export function mountGalleryView(container, { onUseMeta }) {
     $viewer.find('.stng-gallery-prev').on('click', () => step(-1));
     $viewer.find('.stng-gallery-next').on('click', () => step(1));
 
-    // 좌우로 밀어서 넘기기(휴대폰)
-    let touchX = null;
-    $viewerImg.on('touchstart', (e) => { touchX = e.originalEvent.touches[0].clientX; });
-    $viewerImg.on('touchend', (e) => {
-        if (touchX === null) return;
-        const dx = e.originalEvent.changedTouches[0].clientX - touchX;
-        touchX = null;
-        if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
-    });
+    // 좌우로 밀어서 넘기기(휴대폰). 위아래로 밀면 그대로 스크롤된다
+    onHorizontalSwipe($viewerImg, (direction) => step(direction));
 
     $delete.on('click', async () => {
         if (index < 0) return;

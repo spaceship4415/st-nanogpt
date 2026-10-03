@@ -3,6 +3,7 @@ import { getContext } from '../../../../extensions.js';
 import { INSERTS_FILE, LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
 import { createJsonStore } from './json-store.js';
+import { onHorizontalSwipe } from './gestures.js';
 import { openLightbox } from './lightbox.js';
 
 /*
@@ -121,7 +122,8 @@ function renderMessage(element, { showLast = false } = {}) {
 
     const $box = $('<div class="stng-inserts"></div>');
     const $item = $('<div class="stng-insert"></div>');
-    const $img = $('<img alt="" loading="lazy">');
+    // data-swipe-ignore: ST 의 '밀어서 답변 스와이프'가 이 그림에서 시작한 밀기는 무시한다(그림 넘기기와 겹치지 않게)
+    const $img = $('<img alt="" loading="lazy" data-swipe-ignore="true">');
     const $remove = $('<button type="button" class="stng-insert-remove"></button>')
         .attr('title', tr('insert_remove', 'Remove from this message (the image stays in the gallery)'))
         .append('<i class="fa-solid fa-xmark"></i>');
@@ -139,14 +141,9 @@ function renderMessage(element, { showLast = false } = {}) {
     $img.on('click', () => openLightbox(images[index], $img[0]));
     $prev.on('click', () => show(index - 1));
     $next.on('click', () => show(index + 1));
-    // 좌우로 밀어서 넘기기(휴대폰)
-    let touchX = null;
-    $img.on('touchstart', (e) => { touchX = e.originalEvent.touches[0].clientX; });
-    $img.on('touchend', (e) => {
-        if (touchX === null || images.length < 2) return;
-        const dx = e.originalEvent.changedTouches[0].clientX - touchX;
-        touchX = null;
-        if (Math.abs(dx) > 50) show(index + (dx < 0 ? 1 : -1));
+    // 좌우로 밀어서 넘기기(휴대폰). 위아래로 밀면 채팅이 그대로 스크롤된다
+    onHorizontalSwipe($img, (direction) => {
+        if (images.length > 1) show(index + direction);
     });
     // ✕ 는 지금 보이는 장만 뺀다
     $remove.on('click', async (event) => {
