@@ -244,6 +244,17 @@ export function deleteScenePromptsFile() {
     return promptStore.deleteFile();
 }
 
+/**
+ * 메시지가 그대로인지 확인하는 지문(이름+본문). 이미지를 원래 메시지에 붙이기 전에, 그사이 고쳐지거나
+ * 지워져 번호가 밀리지 않았는지 볼 때 쓴다
+ * @param {number} messageId
+ * @returns {string|null}
+ */
+export function messageFingerprint(messageId) {
+    const message = getContext().chat?.[messageId];
+    return message ? fingerprint(String(message.name ?? '') + '|' + String(message.mes ?? '')) : null;
+}
+
 /** @typedef {{ key: string, temp: boolean }} ScenePromptLink 메시지 하나의 프롬프트 기록 자리 */
 
 /**

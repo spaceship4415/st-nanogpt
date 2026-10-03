@@ -1164,3 +1164,44 @@ body.stng-no-mes-button .stng_mes_scene {
         grid-column: 2;
     }
 }
+
+/* 메시지 아래에 화면에만 끼워 넣은 그림 */
+.stng-inserts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.stng-insert {
+    position: relative;
+    max-width: min(100%, 360px);
+}
+
+.stng-insert img {
+    display: block;
+    max-width: 100%;
+    max-height: 420px;
+    border-radius: 10px;
+    cursor: zoom-in;
+}
+
+/* 빼기 버튼: 보이는 크기는 작게, 누르는 영역은 44px */
+.stng-insert-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+}
+
+.stng-insert-remove::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}

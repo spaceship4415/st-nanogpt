@@ -35,11 +35,12 @@ In SillyTavern: **Extensions → Install extension**, then paste this repository
 
 - Choose how many image info records and written prompts to keep under **Records** in the settings (off to 5,000). Lowering it asks before deleting the oldest.
 
-- Settings are saved in their own file, `data/<user>/user/files/st-nanogpt-settings.json`, not in SillyTavern's `settings.json`. Deleting the extension deletes this file, the image info file (`st-nanogpt-images.json`) and the written prompts file (`st-nanogpt-prompts.json`) too. Gallery images themselves are kept, since chats may use them.
+- Settings are saved in their own file, `data/<user>/user/files/st-nanogpt-settings.json`, not in SillyTavern's `settings.json`. Deleting the extension deletes this file, the image info file (`st-nanogpt-images.json`) the written prompts file (`st-nanogpt-prompts.json`) and the under-message images file (`st-nanogpt-inserts.json`) too. Gallery images themselves are kept, since chats may use them.
 
 - **Stop** cancels the wait in SillyTavern, but NanoGPT may still finish the image and charge for it.
 - Generated images are saved to the server gallery (`data/<user>/user/images/<character name>/`) right away by default. Turn this off to save them only when sent to the chat.
-- Images are sent as hidden messages by default, so their prompt is not sent to the model. Change this under **Extensions → NanoGPT Tools**.
+- Choose how **To chat** works for images made from a message: **Show under the message** (default, never sent to the AI, visible only while this extension is on), **Attach to the message** (visible without the extension, but models that read images will see it), or **Hidden message at the end**. Either way the image belongs to the swipe it was made from.
+- Images sent to the end of the chat are hidden messages by default, so their prompt is not sent to the model. Change this under **Extensions → NanoGPT Tools**.
 - Some image models ignore steps, CFG scale and the negative prompt.
 
 ## License

@@ -84,10 +84,21 @@
                     </span>
                 </label>
 
+                <label class="stng-inline" for="st_nanogpt_attach_mode">
+                    <span data-i18n="nanogpt_tools.setting_attach_mode">Send to chat</span>
+                    <select id="st_nanogpt_attach_mode" class="text_pole" data-setting="attachMode">
+                        <option value="overlay" data-i18n="nanogpt_tools.attach_overlay">Show under the message</option>
+                        <option value="message" data-i18n="nanogpt_tools.attach_message">Attach to the message</option>
+                        <option value="hidden" data-i18n="nanogpt_tools.attach_hidden">Hidden message at the end</option>
+                    </select>
+                </label>
+                <!-- 고른 방식의 설명. 글자는 index.js 가 바꿔 넣는다 -->
+                <small class="stng-hint" id="st_nanogpt_attach_hint"></small>
+
                 <label class="stng-item" for="st_nanogpt_hidden">
                     <input id="st_nanogpt_hidden" type="checkbox" data-setting="sendHidden" />
                     <span class="stng-item-text">
-                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_hidden">Hide image messages from the AI</span>
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_hidden">Hide image messages at the end from the AI</span>
                         <small class="stng-hint" data-i18n="nanogpt_tools.setting_hidden_hint">You see the image; its prompt is not sent to the model.</small>
                     </span>
                 </label>

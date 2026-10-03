@@ -1,4 +1,4 @@
-import { eventSource, event_types, neutralCharacterName, stopGeneration, systemUserName } from '../../../../../script.js';
+import { eventSource, event_types, neutralCharacterName, stopGeneration, syncMesToSwipe, systemUserName, updateMessageBlock } from '../../../../../script.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE } from '../../../../constants.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../../../RossAscends-mods.js';
@@ -6,9 +6,10 @@ import { saveBase64AsFile } from '../../../../utils.js';
 import { ApiError, fetchImageModels, generateImage, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
+import { addInsert } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { setImageMeta } from './image-meta.js';
-import { CHARACTER_SCENE, getRememberedPromptAt, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
+import { CHARACTER_SCENE, getRememberedPromptAt, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -25,6 +26,7 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {number} [scale]
  * @property {number} createdAt
  * @property {string|null} [chatId] 만든 채팅(갤러리의 '이 채팅만' 보기용). 임시 채팅이면 없음
+ * @property {{ chatId: string, messageId: number, fingerprint: string }|null} [source] 프롬프트를 쓴 메시지(채팅에 보낼 때 그 메시지에 붙인다)
  * @property {string|null} savedUrl 채팅에 보내려고 서버에 저장한 경로(같은 이미지를 두 번 올리지 않게)
  */
 
@@ -54,10 +56,11 @@ function parseSize(size) {
  * @param {string} [options.model]
  * @param {string} [options.size]
  * @param {string} [options.negativePrompt]
+ * @param {GeneratedImage['source']} [options.source] 프롬프트를 쓴 메시지
  * @param {AbortSignal} [signal]
  * @returns {Promise<GeneratedImage>}
  */
-export async function createImage({ prompt, model, size, negativePrompt }, signal) {
+export async function createImage({ prompt, model, size, negativePrompt, source = null }, signal) {
     const settings = getSettings();
     const finalModel = model || settings.model;
     if (!finalModel) throw new Error(tr('no_model', 'Choose an image model first.'));
@@ -79,7 +82,7 @@ export async function createImage({ prompt, model, size, negativePrompt }, signa
         }, signal);
 
         /** @type {GeneratedImage} */
-        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId: getContext().getCurrentChatId?.() || null, savedUrl: null };
+        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId: getContext().getCurrentChatId?.() || null, source, savedUrl: null };
         sessionImages.unshift(entry);
         sessionImages.length = Math.min(sessionImages.length, MAX_SESSION_IMAGES);
         if (settings.autoSaveGallery) {
@@ -185,6 +188,30 @@ export async function sendImageToChat(entry) {
         negative: entry.negativePrompt,
         source: MEDIA_SOURCE.GENERATED,
     };
+
+    // 메시지에서 만든 그림이면 맨 아래 새 메시지 대신 그 메시지 자체에 붙인다(장면 자리에 그림이 남게)
+    const attach = attachTarget(entry);
+    // 화면에만 끼워 넣기: 채팅 데이터는 그대로 두고 그 메시지 아래에 보여 주기만(AI 에 안 감)
+    if (attach?.mode === 'overlay') {
+        await addInsert(attach.messageId, entry.savedUrl);
+        return entry.savedUrl;
+    }
+    // 원래 메시지에 첨부: 장면 자리에 남고 확장 없이도 보이지만, 이미지를 읽는 모델은 그림을 본다
+    if (attach?.mode === 'message') {
+        const targetId = attach.messageId;
+        const target = context.chat[targetId];
+        target.extra = target.extra ?? {};
+        if (!Array.isArray(target.extra.media)) target.extra.media = [];
+        target.extra.media.push(media);
+        target.extra.media_index = target.extra.media.length - 1;
+        target.extra.media_display = target.extra.media_display ?? MEDIA_DISPLAY.GALLERY;
+        // inline_image 는 건드리지 않는다: ST 에서 false 는 '메시지 글을 숨기고 그림만'이라 본문이 가려진다
+        // 지금 스와이프의 기록에도 옮겨 둔다(안 그러면 스와이프를 넘겼다 오면 첨부가 사라진다). 그림은 이 스와이프에만
+        syncMesToSwipe(targetId);
+        updateMessageBlock(targetId, target);
+        await context.saveChat();
+        return entry.savedUrl;
+    }
     /** @type {ChatMessage} */
     const message = {
         name: context.groupId ? systemUserName : context.name2,
@@ -206,6 +233,31 @@ export async function sendImageToChat(entry) {
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId, 'extension');
     await context.saveChat();
     return entry.savedUrl;
+}
+
+/**
+ * 채팅에 보낼 때 어디에 붙일지. 원래 메시지가 있고 설정이 '맨 아래 숨김 메시지'가 아니면 { 메시지 번호, 방식 }
+ * @param {GeneratedImage} entry
+ * @returns {{ messageId: number, mode: 'overlay'|'message' }|null}
+ */
+export function attachTarget(entry) {
+    const mode = getSettings().attachMode;
+    if (mode === 'hidden') return null;
+    const messageId = sourceMessageId(entry);
+    return messageId === null ? null : { messageId, mode: mode === 'message' ? 'message' : 'overlay' };
+}
+
+/**
+ * 이 이미지를 붙일 원래 메시지 번호. 같은 채팅이고 그 메시지가 그대로 있을 때만(고쳐졌거나 지워져
+ * 번호가 밀렸으면 null → 맨 아래 새 메시지로)
+ * @param {GeneratedImage} entry
+ * @returns {number|null}
+ */
+export function sourceMessageId(entry) {
+    const source = entry.source;
+    if (!source) return null;
+    if ((getContext().getCurrentChatId?.() || '') !== source.chatId) return null;
+    return messageFingerprint(source.messageId) === source.fingerprint ? source.messageId : null;
 }
 
 /**
@@ -535,6 +587,10 @@ export function mountImageView(container) {
                 model: String($model.val()),
                 size: String($size.val()),
                 negativePrompt: String($negative.val()),
+                // 메시지에서 쓴 프롬프트로 만들면 그 메시지를 기억해 두고, 채팅에 보낼 때 거기에 붙인다
+                source: sceneLink && sceneSourceId !== null
+                    ? { chatId: getContext().getCurrentChatId?.() || '', messageId: sceneSourceId, fingerprint: messageFingerprint(sceneSourceId) }
+                    : null,
             }, signal);
             hidePending();
             renderResult();
@@ -628,6 +684,7 @@ export function mountImageView(container) {
         if (!remembered) return;
         $prompt.val(remembered).trigger('input').removeClass('stng-invalid');
         sceneLink = scenePromptLinkFor(selectedSceneId());
+        sceneSourceId = selectedSceneId() >= 0 ? selectedSceneId() : null;
         renderScenePreview(true);
     });
     // 메시지를 고르면, 칸이 비었거나 다른 메시지의 자동생성 결과일 때만 그 메시지로 기억한 프롬프트를 바로 채운다.
@@ -635,11 +692,13 @@ export function mountImageView(container) {
     $sceneMessage.on('change', () => {
         const wasLinked = !!sceneLink;
         sceneLink = null;
+        sceneSourceId = null;
         const id = selectedSceneId();
         const remembered = getRememberedScenePrompt(id);
         if (remembered && (wasLinked || !String($prompt.val()).trim())) {
             $prompt.val(remembered).removeClass('stng-invalid');
             sceneLink = scenePromptLinkFor(id);
+            sceneSourceId = id >= 0 ? id : null;
             renderScenePreview(true);
         } else {
             // 칸에 있던 건 다른 메시지의 자동생성 결과였으니, 기억이 없는 메시지를 고르면 비운다
@@ -655,8 +714,13 @@ export function mountImageView(container) {
      * @type {import('./scene.js').ScenePromptLink|null}
      */
     let sceneLink = null;
+    /** 그 메시지 번호('캐릭터 설정만'이면 null). 생성한 이미지를 채팅에 보낼 때 이 메시지에 붙인다 @type {number|null} */
+    let sceneSourceId = null;
     $prompt.on('input', () => {
-        if (!String($prompt.val()).trim()) sceneLink = null;
+        if (!String($prompt.val()).trim()) {
+            sceneLink = null;
+            sceneSourceId = null;
+        }
     });
 
     /** 진행 중인 [프롬프트 자동생성]의 번호. 취소하면 바뀌어서 늦게 온 결과를 버린다 */
@@ -714,6 +778,7 @@ export function mountImageView(container) {
             if (prompt) {
                 $prompt.val(prompt).trigger('input');
                 sceneLink = link;
+                sceneSourceId = messageId >= 0 ? messageId : null;
             } else {
                 toastr.warning(tr('scene_empty', 'The model returned nothing.'));
             }
@@ -740,6 +805,7 @@ export function mountImageView(container) {
             if (remembered) {
                 $prompt.val(remembered).trigger('input').removeClass('stng-invalid');
                 sceneLink = scenePromptLinkFor(messageId);
+                sceneSourceId = messageId;
                 renderScenePreview(true);
             } else {
                 runScene();
@@ -751,6 +817,7 @@ export function mountImageView(container) {
                 return;
             }
             sceneLink = null;
+            sceneSourceId = null;
             fillForm(prompt);
             if (run) $generate.trigger('click');
             else $prompt.trigger('focus');
@@ -775,6 +842,9 @@ export function mountImageView(container) {
             const folder = galleryFolderOf(current.savedUrl);
             if (folder) meta.push(tr('saved_in_folder', 'Saved to {0} gallery', folder));
             $root.find('.stng-img-meta').text(meta.join(' · '));
+            // 원래 메시지에 붙는지, 맨 아래 새 메시지로 가는지 버튼에서 바로 알 수 있게
+            const attach = attachTarget(current);
+            $send.find('span').text(attach ? tr('attach_to', 'Add to #{0}', attach.messageId) : tr('send', 'To chat'));
             $send.prop('disabled', !canSendToChat());
             $result.find('.stng-send-nochat').prop('hidden', canSendToChat());
         }
@@ -797,8 +867,11 @@ export function mountImageView(container) {
         if (!current) return;
         $send.prop('disabled', true);
         try {
+            const attach = attachTarget(current);
             await sendImageToChat(current);
-            toastr.success(tr('sent', 'Image added to the chat.'));
+            toastr.success(attach
+                ? tr('sent_attached', 'Added the image to message #{0}.', attach.messageId)
+                : tr('sent', 'Image added to the chat.'));
         } catch (error) {
             console.error(LOG_PREFIX, 'failed to send image', error);
             toastr.error(error?.message || String(error), tr('send_failed', 'Could not add the image to the chat'));

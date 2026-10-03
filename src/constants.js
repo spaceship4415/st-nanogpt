@@ -8,6 +8,10 @@ export const IMAGE_META_FILE = 'st-nanogpt-images.json';
 
 /** 메시지별로 써 둔 프롬프트 기록 파일(같은 폴더) */
 export const SCENE_PROMPTS_FILE = 'st-nanogpt-prompts.json';
+/** 메시지 아래 화면에만 끼워 넣은 그림 기록 파일(같은 폴더) */
+export const INSERTS_FILE = 'st-nanogpt-inserts.json';
+/** 메시지에서 만든 그림을 채팅에 보내는 방식: 화면에만 / 원래 메시지에 첨부 / 맨 아래 숨김 메시지 */
+export const ATTACH_MODES = Object.freeze(['overlay', 'message', 'hidden']);
 /** 기록 개수 선택지. 0 = 기록 안 함. 넘으면 오래된 것부터 지운다 */
 export const RECORD_LIMITS = Object.freeze([0, 100, 500, 1000, 2000, 5000]);
 
@@ -69,6 +73,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     sdImported: false,
     // 채팅에 보낸 이미지 메시지를 AI 프롬프트에서 숨김(SD 확장의 기본 동작과 같다)
     sendHidden: true,
+    // 메시지에서 만든 그림을 채팅에 보낼 때(ATTACH_MODES). 원래 메시지가 없는 그림은 늘 맨 아래 숨김 메시지
+    attachMode: 'overlay',
     // 이미지 생성 정보·써 둔 프롬프트를 몇 개까지 기억할지(RECORD_LIMITS, 0 = 기록 안 함)
     imageMetaLimit: 2000,
     scenePromptLimit: 1000,

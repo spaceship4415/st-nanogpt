@@ -9,6 +9,7 @@ import { installBadge, refreshBadge } from './src/badge.js';
 import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, RECORD_LIMITS, REFRESH_INTERVALS, SIZE_PRESETS } from './src/constants.js';
 import { tr } from './src/i18n.js';
 import { deleteImageMetaFile, imageMetaRecords } from './src/image-meta.js';
+import { deleteInsertsFile, installInserts } from './src/inserts.js';
 import { createImage, sendImageToChat, useSceneMessage } from './src/image.js';
 import { openPanel } from './src/panel.js';
 import { deleteScenePromptsFile, getSceneProfileId, listSceneProfiles, preloadScenePrompts, scenePromptRecords } from './src/scene.js';
@@ -62,6 +63,16 @@ async function mountSettingsPanel() {
     });
 
     mountRecordLimits();
+
+    // '채팅에 보내기' 방식마다 무엇이 다른지 바로 아래에 보여 준다
+    const attachHints = {
+        overlay: () => tr('attach_overlay_hint', 'Shown right under the message it was made from (only that swipe). Never sent to the AI. Visible only while this extension is on.'),
+        message: () => tr('attach_message_hint', 'Attached to the message like an uploaded picture (only that swipe). Visible without this extension, but models that read images will see it.'),
+        hidden: () => tr('attach_hidden_hint', 'Added as a hidden message at the end of the chat. Never sent to the AI.'),
+    };
+    const renderAttachHint = () => $('#st_nanogpt_attach_hint').text(attachHints[getSettings().attachMode]?.() ?? '');
+    $('#st_nanogpt_attach_mode').on('change', renderAttachHint);
+    renderAttachHint();
 
     $('#st_nanogpt_scene_profile').on('change', function () {
         setSetting('sceneProfileId', String($(this).val() ?? ''));
@@ -159,6 +170,7 @@ export async function onDelete() {
     await deleteSettingsData();
     await deleteImageMetaFile();
     await deleteScenePromptsFile();
+    await deleteInsertsFile();
 }
 
 /** /nanousage 가 돌려주는 한 줄 요약 */
@@ -276,6 +288,7 @@ jQuery(async () => {
     preloadScenePrompts();
     installBadge(() => openPanel());
     installMessageButton();
+    installInserts();
 
     try {
         await mountSettingsPanel();

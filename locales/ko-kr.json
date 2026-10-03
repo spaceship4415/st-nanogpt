@@ -17,7 +17,7 @@
     "nanogpt_tools.badge_subscription": "구독 사용량만",
     "nanogpt_tools.setting_auto": "사용 후 새로고침",
     "nanogpt_tools.setting_auto_hint": "NanoGPT 응답·이미지 생성 직후 조회. 연달아 쓰면 15초에 한 번.",
-    "nanogpt_tools.setting_hidden": "이미지 메시지를 AI에게 숨기기",
+    "nanogpt_tools.setting_hidden": "맨 아래 이미지 메시지를 AI에게 숨기기",
     "nanogpt_tools.setting_hidden_hint": "이미지는 보이지만 프롬프트는 모델에 보내지 않습니다.",
     "nanogpt_tools.setting_scene_prompt": "지시문 편집",
     "nanogpt_tools.setting_scene_prompt_hint": "시스템 프롬프트로 보냅니다. 고른 메시지는 [Scene to illustrate]로 표시됩니다.",
@@ -172,5 +172,16 @@
     "nanogpt_tools.scene_persona_preview": "페르소나: {0}",
     "nanogpt_tools.err_no_key": "NanoGPT API 키가 없습니다. API 연결에서 저장하세요.",
     "nanogpt_tools.err_nanogpt": "NanoGPT에서 이미지를 만들지 못했습니다. 다른 모델이나 크기로 바꾸거나 잠시 후 다시 시도하세요. 잔액이나 하루 한도가 부족해도 이렇게 실패합니다.",
-    "nanogpt_tools.err_network": "SillyTavern 서버에 연결하지 못했습니다. 연결 상태를 확인하세요."
+    "nanogpt_tools.err_network": "SillyTavern 서버에 연결하지 못했습니다. 연결 상태를 확인하세요.",
+    "nanogpt_tools.attach_to": "#{0}에 붙이기",
+    "nanogpt_tools.sent_attached": "#{0} 메시지에 그림을 붙였습니다.",
+    "nanogpt_tools.setting_attach_mode": "채팅에 보내기",
+    "nanogpt_tools.attach_overlay": "메시지 아래에 보여 주기",
+    "nanogpt_tools.attach_message": "메시지에 첨부",
+    "nanogpt_tools.attach_hidden": "맨 아래 숨김 메시지",
+    "nanogpt_tools.attach_overlay_hint": "그림을 만든 메시지 바로 아래에 보여 줍니다(그 스와이프에서만). AI에게는 절대 안 갑니다. 이 확장이 켜져 있을 때만 보입니다.",
+    "nanogpt_tools.attach_message_hint": "사진 첨부처럼 메시지에 붙입니다(그 스와이프에서만). 확장 없이도 보이지만, 이미지를 읽는 모델은 그림을 봅니다.",
+    "nanogpt_tools.attach_hidden_hint": "채팅 맨 아래에 숨김 메시지로 추가합니다. AI에게는 안 갑니다.",
+    "nanogpt_tools.insert_remove": "이 메시지에서 빼기(그림은 갤러리에 남음)",
+    "nanogpt_tools.no_message": "그 메시지가 더 이상 없습니다."
 }
