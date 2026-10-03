@@ -164,7 +164,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     // 메시지 … 메뉴의 [이 메시지로 이미지] 버튼
     messageButton: true,
     // 장면 메시지 앞에 참고로 붙일 메시지 수
-    sceneContextMessages: 4,
+    sceneContextMessages: 2,
     // 캐릭터·페르소나 설명(외모 등)을 참고로 붙일지
     sceneIncludeCards: true,
     // 이미지 탭의 '프롬프트 자동생성' 상자를 펼쳐 둘지(마지막 상태 기억). 기본은 접음 = 직접 쓰기
