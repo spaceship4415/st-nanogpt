@@ -247,6 +247,45 @@ body.stng-no-mes-button .stng_mes_scene {
     cursor: pointer;
 }
 
+/* 글자가 '갤러/리'처럼 쪼개지지 않게. 아주 좁으면 아이콘을 빼고 글자만 */
+.stng-tabs {
+    container-type: inline-size;
+}
+
+.stng-tab {
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+@container (max-width: 270px) {
+    .stng-tab i {
+        display: none;
+    }
+}
+
+/* 휴대폰: ST 팝업의 테두리 여백(양쪽 22px)을 줄여 패널 폭을 넓힌다. 넓은 화면은 ST 기본값으로 */
+.popup:has(.stng-panel) {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.popup:has(.stng-panel) .popup-content {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+@media (min-width: 768px) {
+    .popup:has(.stng-panel) {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .popup:has(.stng-panel) .popup-content {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
 .stng-tab.stng-active {
     opacity: 1;
     font-weight: bold;
@@ -516,7 +555,8 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-img-preview {
     display: block;
     width: 100%;
-    max-height: 70vh;
+    /* 키 작은 폰에서도 아래 정보·버튼 줄이 한 화면에 같이 보이게 */
+    max-height: min(70dvh, calc(100dvh - 290px));
     object-fit: contain;
     border-radius: 12px;
     background-color: var(--black50a);
@@ -850,7 +890,8 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-gallery-viewer img {
     display: block;
     width: 100%;
-    max-height: 65vh;
+    /* 키 작은 폰에서도 아래 이름·넘기기·버튼 줄이 한 화면에 같이 보이게 */
+    max-height: min(65dvh, calc(100dvh - 290px));
     object-fit: contain;
     border-radius: 12px;
     background-color: var(--black50a);
@@ -922,14 +963,20 @@ body.stng-no-mes-button .stng_mes_scene {
     padding-bottom: 10px;
 }
 
+/* flex 면 text-overflow 가 안 먹어 '…' 없이 잘린다 */
 .stng-gallery-info > summary {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
+    display: block;
+    padding: 12px 0;
+    line-height: 20px;
+    list-style: none;
     overflow: hidden;
     cursor: pointer;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.stng-gallery-info > summary::-webkit-details-marker {
+    display: none;
 }
 
 .stng-meta-list {
@@ -1219,7 +1266,8 @@ body.stng-no-mes-button .stng_mes_scene {
     /* 위아래 스크롤은 브라우저가 바로 처리, 좌우는 그림 넘기기에 쓴다 */
     touch-action: pan-y;
     max-width: 100%;
-    max-height: 420px;
+    /* 키 작은 폰에서 세로 그림 한 장이 채팅 화면을 다 덮지 않게 */
+    max-height: min(420px, 60dvh);
     border-radius: 10px;
     cursor: zoom-in;
 }

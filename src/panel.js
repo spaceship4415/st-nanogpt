@@ -66,6 +66,18 @@ export async function openPanel(tab) {
         select(this.dataset.tab);
     });
 
+    // 모바일 키보드가 올라오면 화면(dvh)이 줄며 팝업도 줄어드는데, 팝업 안 스크롤은 그대로라 입력칸이 화면 밖으로 밀려난다.
+    // 입력칸에 들어간 뒤 화면 크기가 바뀌면(키보드가 다 올라오면) 그 칸을 가운데로 끌어온다
+    const typing = 'textarea, input:not([type]), input[type="text"], input[type="number"], input[type="search"]';
+    const keepFocusedVisible = () => {
+        const field = document.activeElement;
+        if (field instanceof HTMLElement && $root[0].contains(field) && field.matches(typing)) {
+            field.scrollIntoView({ block: 'center' });
+        }
+    };
+    window.addEventListener('resize', keepFocusedVisible);
+    cleanups.push(() => window.removeEventListener('resize', keepFocusedVisible));
+
     const popup = new Popup($root, POPUP_TYPE.TEXT, '', {
         okButton: tr('close', 'Close'),
         wider: true,
