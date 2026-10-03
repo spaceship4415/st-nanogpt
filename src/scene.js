@@ -122,7 +122,11 @@ function buildScenePrompt(messageId) {
         const parts = characters.map(c => `[Character: ${c.name}]\n${c.description}`);
         const persona = settings.sceneIncludeCards ? substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim() : '';
         if (persona) parts.push(`[User: ${context.name1}]\n${persona}`);
-        parts.push(`[Scene to illustrate]\nA portrait of ${characters.map(c => c.name).join(' and ')} as described above, showing appearance and clothing.`);
+        // 페르소나도 보냈으면 함께 그린다(안 그러면 참고만 하고 캐릭터만 그린다)
+        const subjects = [...characters.map(c => c.name), ...(persona ? [context.name1] : [])];
+        parts.push(subjects.length > 1
+            ? `[Scene to illustrate]\nA portrait of ${subjects.join(' and ')} together as described above, showing each one's appearance and clothing.`
+            : `[Scene to illustrate]\nA portrait of ${subjects[0]} as described above, showing appearance and clothing.`);
         return parts.join('\n\n');
     }
 
@@ -302,11 +306,14 @@ export function getRememberedPromptAt(found) {
  */
 export function scenePromptLinkFor(messageId) {
     if (messageId === CHARACTER_SCENE) {
-        // 캐릭터 설명이 바뀌면 지문이 달라져 새로 쓴다
+        // 캐릭터 설명(함께 그리는 페르소나 포함)이 바뀌면 지문이 달라져 새로 쓴다
         const characters = characterDescriptions();
         if (!characters.length) return null;
-        const chatId = getContext().getCurrentChatId?.();
-        const id = `char|${fingerprint(characters.map(c => `${c.name}\n${c.description}`).join('\n'))}`;
+        const context = getContext();
+        const chatId = context.getCurrentChatId?.();
+        const persona = getSettings().sceneIncludeCards ? substituteParams(String(context.powerUserSettings?.persona_description ?? '')).trim() : '';
+        const source = characters.map(c => `${c.name}\n${c.description}`).join('\n') + (persona ? `\n${context.name1}\n${persona}` : '');
+        const id = `char|${fingerprint(source)}`;
         return chatId ? { key: `${chatId}|${id}`, temp: false } : { key: id, temp: true };
     }
     return scenePromptKey(getContext().chat?.[messageId]);
