@@ -1,11 +1,16 @@
 export const MODULE_NAME = 'st_nanogpt';
 export const EXTENSION_NAME = 'third-party/st-nanogpt';
 export const LOG_PREFIX = '[NanoGPT]';
+/** 설정 파일 이름(data/<사용자>/user/files/ 아래) */
+export const SETTINGS_FILE = 'st-nanogpt-settings.json';
 
 // 자동 새로고침이 너무 잦지 않게 막는 최소 간격(ms). 직접 누른 새로고침은 이 제한을 받지 않는다
 export const AUTO_REFRESH_MIN_INTERVAL = 15_000;
 // 채팅 생성이 끝난 뒤 NanoGPT 집계에 반영될 시간을 조금 기다린다
 export const AUTO_REFRESH_DELAY = 3_000;
+
+/** 주기 새로고침 선택지(분). 0 = 끔 */
+export const REFRESH_INTERVALS = Object.freeze([0, 1, 5, 15, 30, 60]);
 
 // 이번 세션에서 만든 이미지를 몇 장까지 기억할지(메모리에만, 새로고침하면 사라짐)
 export const MAX_SESSION_IMAGES = 12;
@@ -40,6 +45,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     badgeContent: 'both',
     // NanoGPT 로 채팅 응답을 받거나 이미지를 만든 뒤 사용량을 자동으로 새로고침
     autoRefresh: true,
+    // 주기적으로 새로고침하는 간격(분). 0 = 끔. 화면이 보일 때만 돈다
+    refreshInterval: 0,
     // 패널을 열 때 처음 보여 줄 탭(마지막으로 본 탭을 기억): 'usage' | 'image'
     lastTab: 'usage',
 
@@ -64,4 +71,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
     sceneContextMessages: 4,
     // 캐릭터·페르소나 설명(외모 등)을 참고로 붙일지
     sceneIncludeCards: true,
+    // 프롬프트 작성에 쓸 연결 프로필 id. '' = 지금 채팅 연결
+    sceneProfileId: '',
 });

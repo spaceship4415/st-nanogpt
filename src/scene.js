@@ -1,12 +1,13 @@
 import { generateRaw, substituteParams } from '../../../../../script.js';
 import { getContext } from '../../../../extensions.js';
+import { ConnectionManagerRequestService } from '../../../shared.js';
 import { tr } from './i18n.js';
 import { getSettings } from './settings.js';
 
 /*
  * '메시지로 프롬프트': 고른 메시지(기본은 최신) 한 개를 장면으로 삼고, 그 앞 메시지 몇 개와
- * 캐릭터·페르소나 설명을 참고 자료로 붙여 채팅 API 에 이미지 프롬프트를 쓰게 한다.
- * ST 의 일반 프롬프트(프리셋·채팅 전체)를 쓰지 않는 generateRaw 라서 토큰이 적게 든다.
+ * 캐릭터·페르소나 설명을 참고 자료로 붙여 채팅 API(또는 고른 연결 프로필)에 이미지 프롬프트를 쓰게 한다.
+ * ST 의 일반 프롬프트(프리셋·채팅 전체)를 쓰지 않아서 토큰이 적게 든다.
  */
 
 /**
@@ -122,20 +123,58 @@ function buildScenePrompt(messageId) {
     return parts.join('\n\n');
 }
 
+/** 답의 최대 길이(토큰). 키워드 목록이라 짧게 */
+const SCENE_RESPONSE_LENGTH = 300;
+
+/**
+ * '메시지로 프롬프트'에 쓸 수 있는 연결 프로필 목록. 연결 관리자 확장이 꺼져 있으면 null.
+ * @returns {{ id: string, name: string }[]|null}
+ */
+export function listSceneProfiles() {
+    try {
+        return ConnectionManagerRequestService.getSupportedProfiles()
+            .map(p => ({ id: p.id, name: p.name }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 설정에 고른 프로필이 아직 있으면 그 id, 없으면(지워졌거나 연결 관리자가 꺼짐) '' = 현재 채팅 연결
+ * @returns {string}
+ */
+export function getSceneProfileId() {
+    const id = getSettings().sceneProfileId;
+    return id && listSceneProfiles()?.some(p => p.id === id) ? id : '';
+}
+
 /**
  * 고른 메시지로 이미지 프롬프트를 만든다(채팅 API 토큰을 쓴다).
+ * 설정에서 연결 프로필을 골랐으면 그 프로필로(지금 채팅 연결은 그대로), 아니면 현재 채팅 연결로 보낸다.
  * @param {number} [messageId] 생략하면 최신 메시지
+ * @param {AbortSignal} [signal] 프로필로 보낼 때의 취소 신호(현재 연결은 ST 의 중지로 멈춘다)
  * @returns {Promise<string>}
  */
-export async function promptFromScene(messageId) {
+export async function promptFromScene(messageId, signal) {
     const id = Number.isInteger(messageId) && messageId >= 0 ? messageId : lastSceneMessageId();
     if (id < 0) throw new Error(tr('scene_no_messages', 'This chat has no messages to draw from.'));
 
-    const result = await generateRaw({
-        prompt: buildScenePrompt(id),
-        systemPrompt: substituteParams(getSettings().scenePrompt),
-        responseLength: 300,
-    });
+    const systemPrompt = substituteParams(getSettings().scenePrompt);
+    const prompt = buildScenePrompt(id);
+    const profileId = getSceneProfileId();
+
+    let result;
+    if (profileId) {
+        // 프로필의 샘플러 프리셋은 쓰지 않는다(긴 응답 길이 등이 섞이지 않게). 텍스트 완성이면 instruct 로 감싼다
+        const data = await ConnectionManagerRequestService.sendRequest(profileId, [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt },
+        ], SCENE_RESPONSE_LENGTH, { signal, includePreset: false });
+        result = /** @type {any} */ (data)?.content;
+    } else {
+        result = await generateRaw({ prompt, systemPrompt, responseLength: SCENE_RESPONSE_LENGTH });
+    }
     return String(result ?? '')
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
         .replace(/^["'\s]+|["'\s]+$/g, '')

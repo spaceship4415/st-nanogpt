@@ -12,5 +12,8 @@
     "i18n": {
         "ko": "locales/ko-kr.json",
         "ko-kr": "locales/ko-kr.json"
+    },
+    "hooks": {
+        "delete": "onDelete"
     }
 }

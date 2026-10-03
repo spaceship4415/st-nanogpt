@@ -576,25 +576,84 @@ body.stng-no-mes-button .stng_mes_scene {
 
 /* ── 확장 설정 패널 ──
    다른 확장 설정과 같은 밀도로(44px 규칙은 패널·배지에만). 체크박스도 ST 기본 크기 그대로 둔다.
+   모든 줄의 글자가 같은 왼쪽 선에서 시작하게: 체크박스 칸(--stng-check) 만큼 들여 쓴다.
    .stng-settings-body(inline-drawer-content)에는 display 를 주지 않는다 — ST 가 display:none 으로 접고 펴기 때문 */
+.stng-settings {
+    --stng-check: 22px;
+    --stng-line: color-mix(in srgb, var(--SmartThemeBorderColor) 45%, transparent);
+}
+
+/* 아래 display 규칙들이 hidden 속성을 이기지 않게 */
+.stng-settings [hidden] {
+    display: none !important;
+}
+
 .stng-settings .stng-header-icon {
     margin-right: 6px;
-    opacity: 0.8;
+    color: var(--SmartThemeQuoteColor);
 }
 
 .stng-settings .stng-btn.menu_button {
     min-height: 0;
+    margin: 0;
     padding: 4px 10px;
+    font-size: 0.9em;
 }
 
-.stng-settings .stng-open-panel.menu_button {
-    width: 100%;
-    margin: 6px 0;
+.stng-settings .stng-hint {
+    display: block;
+    font-size: 0.8em;
+    line-height: 1.35;
+    opacity: 0.6;
 }
 
+/* 연결 상태 카드 */
+.stng-settings .stng-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 8px;
+    padding: 6px 6px 6px 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
+.stng-settings .stng-status-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #888;
+}
+
+.stng-settings .stng-status[data-state="ok"] .stng-status-dot {
+    background-color: #5cb85c;
+    box-shadow: 0 0 6px #5cb85c88;
+}
+
+.stng-settings .stng-status[data-state="error"] .stng-status-dot {
+    background-color: #d9534f;
+}
+
+.stng-settings .stng-status-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.9em;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stng-settings .stng-status-text b {
+    margin-left: 4px;
+}
+
+/* 묶음 카드 */
 .stng-settings .stng-group {
     margin: 8px 0;
-    padding: 6px 10px 4px;
+    padding: 4px 10px 6px;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     background-color: var(--black30a);
@@ -604,35 +663,40 @@ body.stng-no-mes-button .stng_mes_scene {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 2px 0 6px;
+    margin: 0 -10px 2px;
+    padding: 4px 10px 6px;
+    border-bottom: 1px solid var(--stng-line);
     font-size: 0.85em;
     font-weight: bold;
-    opacity: 0.75;
+    letter-spacing: 0.02em;
 }
 
 .stng-settings .stng-group-title i {
-    width: 1.1em;
+    width: var(--stng-check);
+    margin-left: -4px;
     color: var(--SmartThemeQuoteColor);
     text-align: center;
 }
 
+/* 체크박스 줄 */
 .stng-settings .stng-item {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    padding: 5px 0;
+    gap: 0;
+    padding: 6px 0 4px;
     cursor: pointer;
 }
 
 .stng-settings .stng-item input[type="checkbox"] {
-    flex-shrink: 0;
-    margin-top: 2px;
+    flex: 0 0 auto;
+    width: auto;
+    margin: 2px calc(var(--stng-check) - 15px) 0 0;
 }
 
 .stng-settings .stng-item-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
 }
 
@@ -640,15 +704,98 @@ body.stng-no-mes-button .stng_mes_scene {
     line-height: 1.35;
 }
 
-.stng-settings .stng-field {
-    gap: 4px;
-    padding: 5px 0;
+/* 이름 왼쪽 + 입력 오른쪽 한 줄 */
+.stng-settings .stng-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 4px 0 2px;
 }
 
-.stng-settings .stng-item + .stng-item,
-.stng-settings .stng-item + .stng-field,
-.stng-settings .stng-field + .stng-item {
-    border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 50%, transparent);
+.stng-settings .stng-inline > span {
+    flex: 0 0 auto;
+    min-width: 5.5em;
+}
+
+.stng-settings .stng-inline .text_pole {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+.stng-settings .stng-inline .stng-number {
+    flex: 0 0 4.5em;
+    text-align: center;
+}
+
+/* 묶음 안의 줄 사이 구분선 */
+.stng-settings .stng-group > .stng-item + *,
+.stng-settings .stng-group > .stng-hint + .stng-item,
+.stng-settings .stng-group > .stng-hint + .stng-inline,
+.stng-settings .stng-group > .stng-sub + .stng-item,
+.stng-settings .stng-group > .stng-hint + .stng-details,
+.stng-settings .stng-group > .stng-item + .stng-details {
+    margin-top: 2px;
+    border-top: 1px solid var(--stng-line);
+}
+
+.stng-settings .stng-group > .stng-hint {
+    padding-bottom: 4px;
+}
+
+/* 앞 체크박스에 딸린 설정: 체크박스 글자선에 맞춰 들여 쓰고, 꺼지면 흐리게 */
+.stng-settings .stng-sub {
+    margin: 0 0 4px var(--stng-check);
+    padding: 2px 0 4px 10px;
+    border-left: 2px solid var(--stng-line);
+    border-top: 0 !important;
+    transition: opacity 0.2s ease;
+}
+
+.stng-settings .stng-sub.stng-off {
+    opacity: 0.45;
+}
+
+/* 접어 둔 지시문 */
+.stng-settings .stng-details > summary {
+    padding: 6px 0 4px;
+    cursor: pointer;
+    opacity: 0.85;
+}
+
+.stng-settings .stng-details[open] > summary {
+    margin-bottom: 4px;
+}
+
+.stng-settings .stng-details textarea.text_pole {
+    width: 100%;
+    margin: 0 0 4px;
+    resize: vertical;
+}
+
+.stng-settings .stng-details .stng-spread {
+    align-items: flex-start;
+}
+
+/* 명령어 칩 */
+.stng-settings .stng-commands {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin: 4px 2px 6px;
+    font-size: 0.8em;
+}
+
+.stng-settings .stng-commands > span {
+    opacity: 0.6;
+}
+
+.stng-settings .stng-commands code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background-color: var(--black30a);
 }
 
 @media (min-width: 768px) {

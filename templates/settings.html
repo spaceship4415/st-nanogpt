@@ -5,10 +5,16 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content stng-settings-body">
-            <button type="button" class="menu_button stng-btn stng-open-panel">
-                <i class="fa-solid fa-up-right-from-square"></i>
-                <span data-i18n="nanogpt_tools.open_panel">Open NanoGPT panel</span>
-            </button>
+
+            <!-- 연결 상태 + 패널 열기. 글자는 index.js 가 사용량에 맞춰 채운다 -->
+            <div class="stng-status">
+                <span class="stng-status-dot"></span>
+                <span class="stng-status-text"></span>
+                <button type="button" class="menu_button stng-btn stng-open-panel">
+                    <i class="fa-solid fa-up-right-from-square"></i>
+                    <span data-i18n="nanogpt_tools.open_panel_short">Panel</span>
+                </button>
+            </div>
 
             <section class="stng-group">
                 <div class="stng-group-title">
@@ -20,40 +26,48 @@
                     <input id="st_nanogpt_badge" type="checkbox" data-setting="badge" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge">Show a usage badge on screen</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_hint">A small floating button. Tap it to open the panel. Hidden while no NanoGPT key is saved.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_hint">Tap it to open the panel.</small>
                     </span>
                 </label>
 
-                <label class="stng-field" for="st_nanogpt_badge_position">
-                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge_position">Badge position</span>
-                    <select id="st_nanogpt_badge_position" class="text_pole" data-setting="badgePosition">
-                        <option value="top-left" data-i18n="nanogpt_tools.badge_position_top_left">Top left</option>
-                        <option value="top-center" data-i18n="nanogpt_tools.badge_position_top_center">Top center</option>
-                        <option value="top-right" data-i18n="nanogpt_tools.badge_position_top_right">Top right</option>
-                        <option value="bottom-left" data-i18n="nanogpt_tools.badge_position_bottom_left">Bottom left</option>
-                        <option value="bottom-center" data-i18n="nanogpt_tools.badge_position_bottom_center">Bottom center</option>
-                        <option value="bottom-right" data-i18n="nanogpt_tools.badge_position_bottom_right">Bottom right</option>
-                    </select>
-                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_position_hint">Top is just below the top bar, bottom is just above the message box.</small>
-                </label>
-
-                <label class="stng-field" for="st_nanogpt_badge_content">
-                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge_content">Badge shows</span>
-                    <select id="st_nanogpt_badge_content" class="text_pole" data-setting="badgeContent">
-                        <option value="both" data-i18n="nanogpt_tools.badge_both">Balance + subscription</option>
-                        <option value="balance" data-i18n="nanogpt_tools.badge_balance">Balance only</option>
-                        <option value="subscription" data-i18n="nanogpt_tools.badge_subscription">Subscription usage only</option>
-                    </select>
-                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_content_hint">Subscription usage is the share of this week's input tokens already used. Without a subscription the balance is shown.</small>
-                </label>
+                <!-- 배지에 딸린 설정: 배지를 끄면 흐리게 -->
+                <div class="stng-sub" data-depends="badge">
+                    <label class="stng-inline" for="st_nanogpt_badge_position">
+                        <span data-i18n="nanogpt_tools.setting_badge_position">Position</span>
+                        <select id="st_nanogpt_badge_position" class="text_pole" data-setting="badgePosition">
+                            <option value="top-left" data-i18n="nanogpt_tools.badge_position_top_left">Top left</option>
+                            <option value="top-center" data-i18n="nanogpt_tools.badge_position_top_center">Top center</option>
+                            <option value="top-right" data-i18n="nanogpt_tools.badge_position_top_right">Top right</option>
+                            <option value="bottom-left" data-i18n="nanogpt_tools.badge_position_bottom_left">Bottom left</option>
+                            <option value="bottom-center" data-i18n="nanogpt_tools.badge_position_bottom_center">Bottom center</option>
+                            <option value="bottom-right" data-i18n="nanogpt_tools.badge_position_bottom_right">Bottom right</option>
+                        </select>
+                    </label>
+                    <label class="stng-inline" for="st_nanogpt_badge_content">
+                        <span data-i18n="nanogpt_tools.setting_badge_content">Shows</span>
+                        <select id="st_nanogpt_badge_content" class="text_pole" data-setting="badgeContent">
+                            <option value="both" data-i18n="nanogpt_tools.badge_both">Balance + subscription</option>
+                            <option value="balance" data-i18n="nanogpt_tools.badge_balance">Balance only</option>
+                            <option value="subscription" data-i18n="nanogpt_tools.badge_subscription">Subscription usage only</option>
+                        </select>
+                    </label>
+                    <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_sub_hint">Top is below the top bar, bottom is above the message box. Subscription usage is the share of this week's input tokens used.</small>
+                </div>
 
                 <label class="stng-item" for="st_nanogpt_auto">
                     <input id="st_nanogpt_auto" type="checkbox" data-setting="autoRefresh" />
                     <span class="stng-item-text">
-                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto">Refresh automatically</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_auto_hint">After each reply from NanoGPT and each generated image. At most every 15 seconds.</small>
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto">Refresh after use</span>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_auto_hint">Checks right after a NanoGPT reply or a generated image. When you use it back to back, at most once every 15 seconds.</small>
                     </span>
                 </label>
+
+                <label class="stng-inline" for="st_nanogpt_refresh_interval">
+                    <span data-i18n="nanogpt_tools.setting_refresh_interval">Timed refresh</span>
+                    <!-- 선택지는 index.js 가 채운다(숫자 값이라 data-setting 으로 묶지 않는다) -->
+                    <select id="st_nanogpt_refresh_interval" class="text_pole"></select>
+                </label>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_refresh_interval_hint">Checks on a schedule even when you are not using it, to catch usage from other devices or apps. Pauses while SillyTavern is in the background.</small>
             </section>
 
             <section class="stng-group">
@@ -66,10 +80,17 @@
                     <input id="st_nanogpt_hidden" type="checkbox" data-setting="sendHidden" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_hidden">Hide image messages from the AI</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_hidden_hint">Images sent to the chat are shown to you but their prompt is not sent to the model.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_hidden_hint">You see the image; its prompt is not sent to the model.</small>
                     </span>
                 </label>
 
+                <label class="stng-item" for="st_nanogpt_mes_button">
+                    <input id="st_nanogpt_mes_button" type="checkbox" data-setting="messageButton" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_mes_button">⚡ button in each message's … menu</span>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_mes_button_hint">Writes a prompt from that message right away.</small>
+                    </span>
+                </label>
             </section>
 
             <section class="stng-group">
@@ -78,42 +99,48 @@
                     <span data-i18n="nanogpt_tools.settings_group_scene">Prompt from message</span>
                 </div>
 
-                <label class="stng-item" for="st_nanogpt_mes_button">
-                    <input id="st_nanogpt_mes_button" type="checkbox" data-setting="messageButton" />
-                    <span class="stng-item-text">
-                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_mes_button">Image button in each message's … menu</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_mes_button_hint">Opens the Image tab and writes a prompt from that message right away.</small>
-                    </span>
+                <label class="stng-inline" for="st_nanogpt_scene_profile">
+                    <span data-i18n="nanogpt_tools.setting_scene_profile">Connection</span>
+                    <!-- 선택지는 index.js 가 연결 프로필 목록으로 채운다 -->
+                    <select id="st_nanogpt_scene_profile" class="text_pole"></select>
                 </label>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_profile_hint">A profile with a lighter, lower-cost model reduces token costs. Your chat connection stays as it is.</small>
+                <small class="stng-hint" id="st_nanogpt_scene_profile_off" hidden data-i18n="nanogpt_tools.setting_scene_profile_off">Turn on the Connection Manager extension to choose a profile.</small>
+
+                <label class="stng-inline" for="st_nanogpt_scene_context">
+                    <span data-i18n="nanogpt_tools.setting_scene_context">Earlier messages</span>
+                    <input id="st_nanogpt_scene_context" type="number" class="text_pole stng-number" min="0" max="20" step="1" inputmode="numeric" />
+                </label>
+                <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_context_hint">Sent as context before the chosen message (0–20).</small>
 
                 <label class="stng-item" for="st_nanogpt_scene_cards">
                     <input id="st_nanogpt_scene_cards" type="checkbox" data-setting="sceneIncludeCards" />
                     <span class="stng-item-text">
                         <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_cards">Include character and persona descriptions</span>
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_cards_hint">Helps the model get looks and clothing right. Costs more tokens with long cards.</small>
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_cards_hint">Gets looks and clothing right. Long cards use more tokens.</small>
                     </span>
                 </label>
 
-                <label class="stng-field" for="st_nanogpt_scene_context">
-                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_context">Earlier messages to include</span>
-                    <input id="st_nanogpt_scene_context" type="number" class="text_pole" min="0" max="20" step="1" inputmode="numeric" />
-                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_context_hint">Messages before the chosen one, sent as context (0–20). Hidden messages are skipped.</small>
-                </label>
-
-                <label class="stng-field" for="st_nanogpt_scene_prompt">
-                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_prompt">Instruction</span>
-                    <textarea id="st_nanogpt_scene_prompt" class="text_pole" rows="4" data-setting="scenePrompt"></textarea>
+                <!-- 거의 안 바꾸는 긴 칸이라 접어 둔다 -->
+                <details class="stng-details">
+                    <summary data-i18n="nanogpt_tools.setting_scene_prompt">Edit instruction</summary>
+                    <textarea id="st_nanogpt_scene_prompt" class="text_pole" rows="5" data-setting="scenePrompt"></textarea>
                     <span class="stng-row stng-spread">
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_prompt_hint">Sent as the system prompt. The chosen message is marked [Scene to illustrate].</small>
-                        <button type="button" class="menu_button stng-btn stng-btn-small stng-scene-reset">
+                        <small class="stng-hint" data-i18n="nanogpt_tools.setting_scene_prompt_hint">Sent as the system prompt. The chosen message is marked [Scene to illustrate].</small>
+                        <button type="button" class="menu_button stng-btn stng-scene-reset">
                             <i class="fa-solid fa-arrow-rotate-left"></i>
                             <span data-i18n="nanogpt_tools.reset">Reset</span>
                         </button>
                     </span>
-                </label>
+                </details>
             </section>
 
-            <small class="stng-muted" data-i18n="nanogpt_tools.commands_hint">Commands: /nanogpt [usage|image], /nanousage, /nanoimage prompt</small>
+            <div class="stng-commands">
+                <span data-i18n="nanogpt_tools.commands">Commands</span>
+                <code>/nanogpt</code>
+                <code>/nanousage</code>
+                <code>/nanoimage</code>
+            </div>
         </div>
     </div>
 </div>

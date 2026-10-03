@@ -91,6 +91,21 @@ export function scheduleAutoRefresh() {
     }, wait);
 }
 
+/**
+ * 설정한 주기(분)마다 새로고침한다. 30초마다 '마지막 조회 후 주기가 지났나'만 보므로
+ * 설정을 바꾸면 바로 반영되고, 다른 이유로 방금 조회했으면 그만큼 미뤄진다.
+ * 화면이 안 보일 때(다른 탭·앱으로 나감)는 쉬고, 다시 보이면 밀린 조회를 한 번 한다.
+ */
+export function startPeriodicRefresh() {
+    const tick = () => {
+        const minutes = Number(getSettings().refreshInterval) || 0;
+        if (minutes <= 0 || document.visibilityState !== 'visible' || !hasNanoGptKey() || loading) return;
+        if (Date.now() - fetchedAt >= minutes * 60_000) refreshUsage();
+    };
+    setInterval(tick, 30_000);
+    document.addEventListener('visibilitychange', tick);
+}
+
 /** 지금 채팅 API 가 NanoGPT 인지 */
 export function isNanoGptChatSource() {
     return main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.NANOGPT;

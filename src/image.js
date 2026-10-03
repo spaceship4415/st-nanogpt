@@ -6,7 +6,7 @@ import { saveBase64AsFile } from '../../../../utils.js';
 import { fetchImageModels, generateImage, hasNanoGptKey, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
-import { getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene } from './scene.js';
+import { getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -420,11 +420,15 @@ export function mountImageView(container) {
         $generate.prop('disabled', busy);
     }
 
+    /** @type {AbortController|null} */
+    let sceneAbort = null;
+
     async function runScene() {
         if (sceneBusy) {
-            // 취소: 채팅 API 요청을 멈추고(ST 의 중지와 같다) 늦게 오는 결과는 버린다
+            // 취소: 연결 프로필 요청은 신호로, 현재 채팅 연결은 ST 의 중지로 멈추고 늦게 오는 결과는 버린다
             sceneRun++;
-            stopGeneration();
+            if (getSceneProfileId()) sceneAbort?.abort();
+            else stopGeneration();
             setSceneBusy(false);
             toastr.info(tr('scene_cancelled', 'Stopped writing the prompt.'));
             return;
@@ -432,10 +436,11 @@ export function mountImageView(container) {
         const value = String($sceneMessage.val());
         const messageId = value === 'last' ? lastSceneMessageId() : Number(value);
         const run = ++sceneRun;
+        sceneAbort = new AbortController();
         setStatus('');
         setSceneBusy(true, messageId);
         try {
-            const prompt = await promptFromScene(messageId);
+            const prompt = await promptFromScene(messageId, sceneAbort.signal);
             if (run !== sceneRun) return;
             if (prompt) {
                 $prompt.val(prompt).trigger('input');

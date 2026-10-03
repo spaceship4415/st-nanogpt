@@ -3,14 +3,15 @@ import { renderExtensionTemplateAsync } from '../../../extensions.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
-import { hasNanoGptKey } from './src/api.js';
+import { hasNanoGptKey, NoKeyError } from './src/api.js';
 import { installBadge, refreshBadge } from './src/badge.js';
-import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, SIZE_PRESETS } from './src/constants.js';
+import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, REFRESH_INTERVALS, SIZE_PRESETS } from './src/constants.js';
 import { tr } from './src/i18n.js';
 import { createImage, sendImageToChat, useSceneMessage } from './src/image.js';
 import { openPanel } from './src/panel.js';
-import { clampContext, getSettings, loadSettings, setSetting } from './src/settings.js';
-import { formatCount, formatUsd, isNanoGptChatSource, percentOf, refreshUsage, scheduleAutoRefresh } from './src/usage.js';
+import { getSceneProfileId, listSceneProfiles } from './src/scene.js';
+import { clampContext, deleteSettingsData, getSettings, loadSettings, setSetting } from './src/settings.js';
+import { formatCount, formatUsd, getUsageState, isNanoGptChatSource, onUsageChange, percentOf, refreshUsage, scheduleAutoRefresh, startPeriodicRefresh } from './src/usage.js';
 
 async function mountSettingsPanel() {
     const html = await renderExtensionTemplateAsync(EXTENSION_NAME, 'templates/settings');
@@ -25,8 +26,12 @@ async function mountSettingsPanel() {
             setSetting(/** @type {any} */ (key), $(this).prop('checked'));
             refreshBadge();
             refreshMessageButton();
+            refreshDependents();
         });
     });
+    refreshDependents();
+    onUsageChange(renderSettingsStatus);
+    renderSettingsStatus();
     $panel.find('#st_nanogpt_scene_context').val(settings.sceneContextMessages).on('change', function () {
         const value = clampContext($(this).val());
         $(this).val(value);
@@ -43,6 +48,78 @@ async function mountSettingsPanel() {
         $('#st_nanogpt_scene_prompt').val(DEFAULT_SCENE_PROMPT).trigger('input');
     });
     $panel.find('.stng-open-panel').on('click', () => openPanel());
+
+    const $interval = $('#st_nanogpt_refresh_interval');
+    $interval.append(REFRESH_INTERVALS.map(minutes => new Option(
+        minutes === 0 ? tr('interval_off', 'Off')
+            : minutes < 60 ? tr('interval_minutes', 'Every {0} min', minutes)
+                : tr('interval_hours', 'Every {0} h', minutes / 60),
+        String(minutes))));
+    $interval.val(String(settings.refreshInterval)).on('change', function () {
+        setSetting('refreshInterval', Number($(this).val()) || 0);
+    });
+
+    $('#st_nanogpt_scene_profile').on('change', function () {
+        setSetting('sceneProfileId', String($(this).val() ?? ''));
+    });
+    fillProfileSelect();
+    for (const type of [event_types.CONNECTION_PROFILE_CREATED, event_types.CONNECTION_PROFILE_UPDATED, event_types.CONNECTION_PROFILE_DELETED]) {
+        eventSource.on(type, fillProfileSelect);
+    }
+}
+
+/** 체크박스에 딸린 설정(data-depends)은 그 체크박스가 꺼지면 흐리게 */
+function refreshDependents() {
+    const settings = getSettings();
+    $('#st_nanogpt_settings .stng-sub[data-depends]').each(function () {
+        $(this).toggleClass('stng-off', !settings[this.dataset.depends]);
+    });
+}
+
+/** 설정창 맨 위 상태 줄: 키 연결 여부와 잔액 */
+function renderSettingsStatus() {
+    const $status = $('#st_nanogpt_settings .stng-status');
+    const $text = $status.find('.stng-status-text').empty();
+    const { credits, error, loading } = getUsageState();
+
+    if (!hasNanoGptKey() || error instanceof NoKeyError) {
+        $status.attr('data-state', 'off');
+        $text.text(tr('status_no_key', 'No NanoGPT key — save one in API Connections'));
+    } else if (credits) {
+        $status.attr('data-state', 'ok');
+        $text.text(tr('status_connected', 'NanoGPT connected'));
+        $text.append($('<b></b>').text(formatUsd(credits.usd_balance)));
+        if (credits.subscription?.active) $text.append(document.createTextNode(` · ${tr('status_sub', 'Subscribed')}`));
+    } else if (error && !loading) {
+        $status.attr('data-state', 'error');
+        $text.text(tr('load_failed', 'Could not load NanoGPT usage.'));
+    } else {
+        $status.attr('data-state', 'off');
+        $text.text(tr('loading', 'Loading…'));
+    }
+}
+
+/**
+ * '프롬프트 작성에 쓸 연결' 드롭다운. 맨 위는 지금 채팅 연결, 그 아래 연결 프로필들.
+ * 고른 프로필이 지워졌으면 지금 채팅 연결로 보인다(실제 요청도 그렇게 간다)
+ */
+function fillProfileSelect() {
+    const $select = $('#st_nanogpt_scene_profile');
+    const profiles = listSceneProfiles();
+    $select.empty().append(new Option(tr('scene_profile_current', 'Current chat connection'), ''));
+    for (const profile of profiles ?? []) {
+        $select.append(new Option(profile.name, profile.id));
+    }
+    $select.val(getSceneProfileId());
+    $select.prop('disabled', profiles === null);
+    $('#st_nanogpt_scene_profile_off').prop('hidden', profiles !== null);
+}
+
+/**
+ * 확장을 지울 때 ST 가 부르는 훅(manifest.json 의 hooks.delete). 설정 파일을 지운다.
+ */
+export async function onDelete() {
+    await deleteSettingsData();
 }
 
 /** /nanousage 가 돌려주는 한 줄 요약 */
@@ -156,7 +233,7 @@ function refreshMessageButton() {
 }
 
 jQuery(async () => {
-    loadSettings();
+    await loadSettings();
     installBadge(() => openPanel());
     installMessageButton();
 
@@ -171,6 +248,8 @@ jQuery(async () => {
     } catch (error) {
         console.error(LOG_PREFIX, 'failed to register slash commands', error);
     }
+
+    startPeriodicRefresh();
 
     eventSource.on(event_types.GENERATION_ENDED, () => {
         if (isNanoGptChatSource()) scheduleAutoRefresh();
