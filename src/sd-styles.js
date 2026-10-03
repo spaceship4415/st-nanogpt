@@ -73,3 +73,46 @@ function commit() {
     select.replaceChildren(...(getSdStyles() ?? []).map(s => new Option(s.name, s.name)));
     select.value = extension_settings.sd.style ?? '';
 }
+
+/** 내보낸 파일임을 알아보는 표시 */
+const EXPORT_TYPE = 'st-nanogpt-styles';
+
+/** @returns {string} 스타일 목록 전체를 담은 JSON */
+export function exportSdStyles() {
+    const styles = (getSdStyles() ?? []).map(s => ({ name: s.name, prefix: s.prefix ?? '', negative: s.negative ?? '' }));
+    return JSON.stringify({ type: EXPORT_TYPE, version: 1, styles }, null, 2);
+}
+
+/**
+ * 내보낸 파일(또는 스타일 배열만 담은 JSON)을 목록에 더한다. 지금 것을 지우거나 덮어쓰지 않는다:
+ * 이름과 내용이 같으면 건너뛰고, 이름만 같으면 '이름 (2)'처럼 새 이름으로 넣는다
+ * @param {string} text
+ * @returns {{ added: number, renamed: number, skipped: number }}
+ */
+export function importSdStyles(text) {
+    const styles = getSdStyles();
+    if (!styles) throw new Error('Image Generation extension is not available');
+    const data = JSON.parse(text);
+    const list = Array.isArray(data) ? data : data?.styles;
+    if (!Array.isArray(list)) throw new Error('Invalid file');
+
+    const result = { added: 0, renamed: 0, skipped: 0 };
+    for (const item of list) {
+        const name = String(item?.name ?? '').trim();
+        if (!name) continue;
+        const prefix = String(item.prefix ?? '');
+        const negative = String(item.negative ?? '');
+        const same = styles.find(s => s.name === name);
+        if (same && same.prefix === prefix && same.negative === negative) {
+            result.skipped++;
+            continue;
+        }
+        let finalName = name;
+        for (let n = 2; styles.some(s => s.name === finalName); n++) finalName = `${name} (${n})`;
+        styles.push({ name: finalName, prefix, negative });
+        if (finalName === name) result.added++;
+        else result.renamed++;
+    }
+    if (result.added || result.renamed) commit();
+    return result;
+}

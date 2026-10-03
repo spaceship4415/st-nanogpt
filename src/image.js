@@ -3,7 +3,7 @@ import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE } from '../../../../constants.j
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../../../RossAscends-mods.js';
-import { saveBase64AsFile } from '../../../../utils.js';
+import { download, saveBase64AsFile } from '../../../../utils.js';
 import { ApiError, fetchImageModels, fetchModelInfo, generateImage, getModelInfo, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
@@ -11,7 +11,7 @@ import { addInsert, removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { removeImageMeta, setImageMeta } from './image-meta.js';
 import { CHARACTER_SCENE, getRememberedPromptAt, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
-import { deleteSdStyle, getSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
+import { deleteSdStyle, exportSdStyles, getSdStyles, importSdStyles, renameSdStyle, saveSdStyle } from './sd-styles.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
 
@@ -692,6 +692,26 @@ export function mountImageView(container) {
         // 지워도 두 칸의 내용은 그대로 둔다(지금 쓰는 값이 사라지지 않게)
         deleteSdStyle(name);
         fillStyles();
+    });
+
+    // 스타일 목록 전체를 파일로 내보내고, 받은 파일을 더한다(지금 것은 지우거나 덮어쓰지 않는다)
+    $root.find('.stng-img-style-export').on('click', () => {
+        download(exportSdStyles(), `nanogpt-styles_${humanizedDateTime()}.json`, 'application/json');
+    });
+    const $styleFile = $root.find('.stng-img-style-file');
+    $root.find('.stng-img-style-import').on('click', () => $styleFile.trigger('click'));
+    $styleFile.on('change', async () => {
+        const file = /** @type {HTMLInputElement} */ ($styleFile[0]).files?.[0];
+        $styleFile.val('');
+        if (!file) return;
+        try {
+            const { added, renamed, skipped } = importSdStyles(await file.text());
+            fillStyles();
+            toastr.success(tr('style_imported', 'Added {0} styles ({1} renamed because the name was taken, {2} already there).', added + renamed, renamed, skipped));
+        } catch (error) {
+            console.warn(LOG_PREFIX, 'failed to import styles', error);
+            toastr.error(tr('style_import_failed', 'This is not a style file.'));
+        }
     });
 
     $size.on('change', () => setSetting('size', String($size.val())));
