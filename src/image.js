@@ -736,10 +736,24 @@ export function mountImageView(container) {
         const file = /** @type {HTMLInputElement} */ ($styleFile[0]).files?.[0];
         $styleFile.val('');
         if (!file) return;
+        // 지금 스타일이 있으면 더할지, 이 파일로 통째로 바꿀지(하나씩 지우지 않아도 되게)
+        let replace = false;
+        const count = getSdStyles()?.length ?? 0;
+        if (count) {
+            const result = await callGenericPopup(tr('style_import_how', 'Add the styles in this file to your list, or replace your list with them?'), POPUP_TYPE.CONFIRM, '', {
+                okButton: tr('style_import_add', 'Add'),
+                cancelButton: tr('cancel', 'Cancel'),
+                customButtons: [{ text: tr('style_import_replace', 'Replace (remove my {0})', count), result: 2 }],
+            });
+            if (result === 2) replace = true;
+            else if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+        }
         try {
-            const { added, renamed, skipped } = importSdStyles(await file.text());
+            const { added, renamed, skipped } = importSdStyles(await file.text(), { replace });
             fillStyles();
-            toastr.success(tr('style_imported', 'Added {0} styles ({1} renamed because the name was taken, {2} already there).', added + renamed, renamed, skipped));
+            toastr.success(replace
+                ? tr('style_replaced', 'Replaced your styles with the {0} in the file.', added + renamed)
+                : tr('style_imported', 'Added {0} styles ({1} renamed because the name was taken, {2} already there).', added + renamed, renamed, skipped));
         } catch (error) {
             console.warn(LOG_PREFIX, 'failed to import styles', error);
             toastr.error(tr('style_import_failed', 'This is not a style file.'));

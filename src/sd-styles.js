@@ -89,17 +89,20 @@ export function exportSdStyles(name) {
 }
 
 /**
- * 내보낸 파일(또는 스타일 배열만 담은 JSON)을 목록에 더한다. 지금 것을 지우거나 덮어쓰지 않는다:
- * 이름과 내용이 같으면 건너뛰고, 이름만 같으면 '이름 (2)'처럼 새 이름으로 넣는다
+ * 내보낸 파일(또는 스타일 배열만 담은 JSON)을 목록에 넣는다.
+ * 기본은 더하기: 지금 것을 지우거나 덮어쓰지 않고, 이름과 내용이 같으면 건너뛰고, 이름만 같으면 '이름 (2)'로 넣는다.
+ * replace 면 지금 목록을 비우고 파일 내용으로 바꾼다(파일이 올바른지 먼저 확인한 뒤에 비운다)
  * @param {string} text
+ * @param {{ replace?: boolean }} [options]
  * @returns {{ added: number, renamed: number, skipped: number }}
  */
-export function importSdStyles(text) {
+export function importSdStyles(text, { replace = false } = {}) {
     const styles = getSdStyles();
     if (!styles) throw new Error('Image Generation extension is not available');
     const data = JSON.parse(text);
     const list = Array.isArray(data) ? data : data?.styles;
     if (!Array.isArray(list)) throw new Error('Invalid file');
+    if (replace) styles.splice(0, styles.length);
 
     const result = { added: 0, renamed: 0, skipped: 0 };
     for (const item of list) {
@@ -118,6 +121,8 @@ export function importSdStyles(text) {
         if (finalName === name) result.added++;
         else result.renamed++;
     }
-    if (result.added || result.renamed) commit();
+    // 이미지 생성 확장에서 고른 스타일이 사라졌으면 선택만 푼다
+    if (replace && !styles.some(s => s.name === extension_settings.sd.style)) extension_settings.sd.style = '';
+    if (replace || result.added || result.renamed) commit();
     return result;
 }
