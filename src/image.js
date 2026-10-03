@@ -713,9 +713,22 @@ export function mountImageView(container) {
         fillStyles();
     });
 
-    // 스타일 목록 전체를 파일로 내보내고, 받은 파일을 더한다(지금 것은 지우거나 덮어쓰지 않는다)
-    $root.find('.stng-img-style-export').on('click', () => {
-        download(exportSdStyles(), `nanogpt-styles_${humanizedDateTime()}.json`, 'application/json');
+    // 스타일을 파일로 내보내고, 받은 파일을 더한다(지금 것은 지우거나 덮어쓰지 않는다).
+    // 고른 스타일이 있으면 그것만 / 전체 중에서 고른다
+    $root.find('.stng-img-style-export').on('click', async () => {
+        const selected = String($style.val() || '');
+        let only;
+        if (selected) {
+            const result = await callGenericPopup(tr('style_export_which', 'Which styles do you want to export?'), POPUP_TYPE.CONFIRM, '', {
+                okButton: tr('style_export_one', 'Only "{0}"', selected),
+                cancelButton: tr('cancel', 'Cancel'),
+                customButtons: [{ text: tr('style_export_all', 'All styles'), result: 2 }],
+            });
+            if (result === POPUP_RESULT.AFFIRMATIVE) only = selected;
+            else if (result !== 2) return;
+        }
+        const safe = only ? `_${only.replace(/[\\/:*?"<>|]+/g, '_')}` : '';
+        download(exportSdStyles(only), `nanogpt-styles${safe}_${humanizedDateTime()}.json`, 'application/json');
     });
     const $styleFile = $root.find('.stng-img-style-file');
     $root.find('.stng-img-style-import').on('click', () => $styleFile.trigger('click'));

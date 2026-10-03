@@ -77,9 +77,14 @@ function commit() {
 /** 내보낸 파일임을 알아보는 표시 */
 const EXPORT_TYPE = 'st-nanogpt-styles';
 
-/** @returns {string} 스타일 목록 전체를 담은 JSON */
-export function exportSdStyles() {
-    const styles = (getSdStyles() ?? []).map(s => ({ name: s.name, prefix: s.prefix ?? '', negative: s.negative ?? '' }));
+/**
+ * @param {string} [name] 이 스타일만. 생략하면 전체
+ * @returns {string} 스타일을 담은 JSON
+ */
+export function exportSdStyles(name) {
+    const styles = (getSdStyles() ?? [])
+        .filter(s => name === undefined || s.name === name)
+        .map(s => ({ name: s.name, prefix: s.prefix ?? '', negative: s.negative ?? '' }));
     return JSON.stringify({ type: EXPORT_TYPE, version: 1, styles }, null, 2);
 }
 

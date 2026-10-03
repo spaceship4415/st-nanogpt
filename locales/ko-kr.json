@@ -228,5 +228,8 @@
     "nanogpt_tools.help": "도움말",
     "nanogpt_tools.gen_values": "생성 값",
     "nanogpt_tools.style_export_title": "스타일 목록을 파일로 내보내기",
-    "nanogpt_tools.style_import_title": "파일에서 스타일 가져오기"
+    "nanogpt_tools.style_import_title": "파일에서 스타일 가져오기",
+    "nanogpt_tools.style_export_which": "어떤 스타일을 내보낼까요?",
+    "nanogpt_tools.style_export_one": "\"{0}\"만",
+    "nanogpt_tools.style_export_all": "전체"
 }
