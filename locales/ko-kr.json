@@ -238,5 +238,8 @@
     "nanogpt_tools.style_replaced": "스타일 목록을 파일의 {0}개로 바꿨습니다.",
     "nanogpt_tools.scene_persona": "페르소나만 (설명으로)",
     "nanogpt_tools.scene_both": "캐릭터 + 페르소나 (설명으로)",
-    "nanogpt_tools.scene_no_persona": "지금 페르소나에 설명이 없어 그릴 수 없습니다."
+    "nanogpt_tools.scene_no_persona": "지금 페르소나에 설명이 없어 그릴 수 없습니다.",
+    "nanogpt_tools.deleted_undo": "이미지를 삭제했습니다.",
+    "nanogpt_tools.undo": "되돌리기",
+    "nanogpt_tools.undo_too_late": "이미 서버에서 지워졌습니다."
 }

@@ -221,6 +221,37 @@ async function discardImage(entry) {
     if (index >= 0) sessionImages.splice(index, 1);
 }
 
+/** [되돌리기] 를 누를 수 있는 시간(ms). 이 시간이 지나야 서버에서 지운다 */
+const UNDO_DELAY = 6000;
+
+/**
+ * 이번 세션 이미지를 목록에서 바로 빼고, 서버 파일은 UNDO_DELAY 뒤에 지운다.
+ * 그 사이 돌려 놓으면 서버 파일은 처음부터 지워지지 않는다. 페이지를 닫으면 파일은 그대로 남는다(안전한 쪽)
+ * @param {GeneratedImage} entry
+ * @returns {() => boolean} 돌려 놓기. 이미 지웠으면 false
+ */
+function discardImageLater(entry) {
+    const index = sessionImages.indexOf(entry);
+    if (index >= 0) sessionImages.splice(index, 1);
+    let done = false;
+    const timer = setTimeout(async () => {
+        done = true;
+        if (!entry.savedUrl) return;
+        try {
+            await deleteGalleryImage(entry.savedUrl);
+        } catch (error) {
+            console.error(LOG_PREFIX, 'failed to delete image', error);
+            toastr.error(error?.message || String(error), tr('gallery_delete_failed', 'Could not delete the image'));
+        }
+    }, UNDO_DELAY);
+    return () => {
+        if (done) return false;
+        clearTimeout(timer);
+        sessionImages.splice(Math.min(Math.max(index, 0), sessionImages.length), 0, entry);
+        return true;
+    };
+}
+
 /**
  * 생성 실패를 사용자가 알아듣고 다음에 뭘 해 볼지 알 수 있는 문장으로.
  * ST 서버는 NanoGPT 의 자세한 오류를 넘겨주지 않아 상태 코드로만 나눈다
@@ -1232,22 +1263,46 @@ export function mountImageView(container) {
             const result = await callGenericPopup(message, POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
             if (result !== POPUP_RESULT.AFFIRMATIVE) return;
         }
-        $discard.prop('disabled', true);
-        try {
-            const shown = imagesForThisChat();
-            const position = shown.indexOf(entry);
-            await discardImage(entry);
-            // 지운 자리의 다음(없으면 이전) 이미지를 보여 준다
+        const shown = imagesForThisChat();
+        const position = shown.indexOf(entry);
+        /** 지운 자리의 다음(없으면 이전) 이미지를 보여 준다 */
+        const showNext = () => {
             const rest = imagesForThisChat();
             current = rest[Math.min(Math.max(position, 0), rest.length - 1)] ?? null;
             renderResult();
-            toastr.success(tr('gallery_deleted', 'Image deleted.'));
-        } catch (error) {
-            console.error(LOG_PREFIX, 'failed to delete image', error);
-            toastr.error(error?.message || String(error), tr('gallery_delete_failed', 'Could not delete the image'));
-        } finally {
-            $discard.prop('disabled', false);
+        };
+
+        // 채팅에 보낸 그림은 거기서 이미 그 파일을 쓰고 있어 되돌리기가 의미 없다: 확인받고 바로 지운다
+        if (entry.sent) {
+            $discard.prop('disabled', true);
+            try {
+                await discardImage(entry);
+                showNext();
+                toastr.success(tr('gallery_deleted', 'Image deleted.'));
+            } catch (error) {
+                console.error(LOG_PREFIX, 'failed to delete image', error);
+                toastr.error(error?.message || String(error), tr('gallery_delete_failed', 'Could not delete the image'));
+            } finally {
+                $discard.prop('disabled', false);
+            }
+            return;
         }
+
+        // 보내지 않은 그림: 묻지 않고 바로 빼고, 잠깐 [되돌리기] 를 띄운다
+        const restore = discardImageLater(entry);
+        showNext();
+        const $toast = toastr.info(tr('deleted_undo', 'Image deleted.'), '', { timeOut: UNDO_DELAY, extendedTimeOut: 2000, tapToDismiss: false });
+        const $undo = $('<button type="button" class="menu_button stng-undo"></button>').text(tr('undo', 'Undo'));
+        $undo.on('click', () => {
+            toastr.clear($toast);
+            if (!restore()) {
+                toastr.warning(tr('undo_too_late', 'It was already deleted.'));
+                return;
+            }
+            current = entry;
+            renderResult();
+        });
+        $toast?.find('.toast-message').append(' ', $undo);
     });
     // 이 이미지를 만든 모델·크기·프롬프트·고급 설정을 모두 입력칸으로 불러온다
     $root.find('.stng-img-reuse').on('click', () => {

@@ -1700,3 +1700,19 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-gallery-bulk-delete.menu_button {
     color: #ff8a80;
 }
+
+/* 삭제 알림의 [되돌리기]: 문구 왼쪽, 버튼 오른쪽 한 줄 */
+.toast .toast-message:has(.stng-undo) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.toast .stng-undo.menu_button {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 4px 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
