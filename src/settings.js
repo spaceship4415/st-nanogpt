@@ -1,6 +1,7 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, LEGACY_SCENE_PROMPT_V6, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE, SETTINGS_VERSION } from './constants.js';
+import { PAST_SCENE_PROMPTS } from './legacy-prompts.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -94,43 +95,16 @@ function normalize(stored) {
  * @param {Record<string, any>} target
  */
 function migrate(target) {
-    // v1 → v2: '프롬프트 자동생성'이 고른 메시지 + 참고 자료 방식으로 바뀌어 기본 지시문도 바뀜.
-    // 사용자가 고치지 않은 옛 기본값만 새 기본값으로 바꾼다
-    if (target.version < 2) {
-        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V1) target.scenePrompt = DEFAULT_SCENE_PROMPT;
-        target.version = 2;
-        target.__changed = true;
-    }
     // v2 → v3: 배지 '표시 내용' 하나 고르기(badgeContent)가 항목 여러 개 고르기(badgeItems)로
     if (target.version < 3) {
         const items = { balance: ['balance'], subscription: ['week'], both: ['balance', 'week'] }[target.badgeContent];
         if (items) target.badgeItems = items;
         delete target.badgeContent;
-        target.version = 3;
-        target.__changed = true;
     }
-    // v3 → v4: 기본 지시문에 인원수·페르소나 포함·자세 하나·화풍 단어 금지 등을 더함. 고치지 않은 옛 기본값만 바꾼다
-    if (target.version < 4) {
-        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V2) target.scenePrompt = DEFAULT_SCENE_PROMPT;
-        target.version = 4;
-        target.__changed = true;
-    }
-    // v4 → v5: 장소를 인물 앞으로(이미지 모델은 앞 단어를 세게 따른다. 장소가 끝에 있으면 화풍의 기본 배경에 밀렸다)
-    if (target.version < 5) {
-        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V4) target.scenePrompt = DEFAULT_SCENE_PROMPT;
-        target.version = 5;
-        target.__changed = true;
-    }
-    // v5 → v6: 인원수는 표준 태그(2girls 등), 사람마다 성별 단어, 비유 금지('puppy-like' 를 강아지로 그렸다), 눈에 보이는 자세만
-    if (target.version < 6) {
-        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V5) target.scenePrompt = DEFAULT_SCENE_PROMPT;
-        target.version = 6;
-        target.__changed = true;
-    }
-    // v6 → v7: 규칙을 늘린 기본 지시문(v4~v6)이 오히려 장면을 덜 옮겨서 처음 문장으로 되돌린다
-    if (target.version < 7) {
-        if ([LEGACY_SCENE_PROMPT_V4, LEGACY_SCENE_PROMPT_V5, LEGACY_SCENE_PROMPT_V6].includes(target.scenePrompt)) target.scenePrompt = DEFAULT_SCENE_PROMPT;
-        target.version = 7;
+    // 기본 지시문이 바뀌었으면: 예전 판 기본값을 그대로 쓰는 사용자만 지금 기본값으로(직접 고친 지시문은 둔다)
+    if (target.version < SETTINGS_VERSION) {
+        if (PAST_SCENE_PROMPTS.includes(target.scenePrompt)) target.scenePrompt = DEFAULT_SCENE_PROMPT;
+        target.version = SETTINGS_VERSION;
         target.__changed = true;
     }
 }

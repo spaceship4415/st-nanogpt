@@ -39,76 +39,17 @@ export const SIZE_PRESETS = Object.freeze([
 ]);
 
 /*
- * 기본 지시문은 처음(v2) 문장으로 되돌렸다. 규칙을 늘린 v4~v6 은 채팅 AI 가 장면보다 규칙에 매달려 결과가 나빠졌다
+ * 프롬프트 자동생성의 기본 지시문(시스템 프롬프트). qwen-image·z-image-turbo 처럼 문장을 알아듣는 모델용 문장형.
+ * 바꿀 때는 지금 문장을 legacy-prompts.js 의 PAST_SCENE_PROMPTS 에 더하고 SETTINGS_VERSION 을 올린다
+ * (고치지 않은 사용자만 새 기본값으로 바뀐다)
  */
-export const DEFAULT_SCENE_PROMPT = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
-
-/** v6 의 기본 지시문(규칙이 많은 판). 사용자가 고치지 않았으면 v7 에서 처음 문장으로 되돌린다 */
-export const LEGACY_SCENE_PROMPT_V6 = [
-    'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
-    '',
-    'Order (the image generator follows the first words most strongly):',
-    '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
-    '2. The number of people as standard tags: "solo", "2girls", "1boy 1girl", "2boys", "3girls" and so on.',
-    '3. The place in only 2-4 keywords: "indoors" or "outdoors" first, then the location (e.g. "indoors, bedroom").',
-    '4. EVERY person present in the moment, including the user\'s persona if they are there. For each: their name, then "woman" or "man" (or "girl" / "boy"), then hair, eyes, body, clothing, ONE visible pose and facial expression.',
-    '5. Key objects around them, time of day, lighting and mood (e.g. "bed, blanket, bedside lamp, night, warm dim light, worried mood").',
-    '',
-    'Rules:',
-    '- Describe looks literally. Never compare people to animals or objects (no "puppy-like", "cat-like", "doll-like"); the image generator draws those words literally.',
-    '- A pose must be a visible body position (e.g. "lying in bed", "sitting on the edge of the bed"), not a state or action in time like "waking up" or "thinking".',
-    '- Each person gets only one pose and at most one hand action. Do not describe hands unless essential.',
-    '- If two people touch, keep it simple (e.g. leaning on a shoulder, holding hands) and add no other arm actions.',
-    '- Do not include any art style, medium or quality words; describe only the content.',
-    '- Never include text, captions, speech bubbles, signs or timestamps.',
-    '',
-    'Output only the keyword list, nothing else.',
+export const DEFAULT_SCENE_PROMPT = [
+    'You write prompts for an image generator that understands natural English sentences. It cannot draw sound, so never write dialogue, quotes, or words like saying, whispering or murmuring; if someone is speaking, show it only as their mouth and facial expression. Use the character descriptions and the story so far only as reference.',
+    'Pick the single most emotional moment in [Scene to illustrate], usually an interaction between the people, and describe it like one photograph in one paragraph (3-5 sentences, under 130 words): where it happens, who is there, and who is doing what to whom at that instant.',
+    'For each person, give a full look: woman or man, age, build, skin tone, hair (length, style, color), eye color, notable features (scars, tattoos, accessories), and their whole outfit from top to shoes with colors and materials, plus their exact pose and facial expression. Always include every person\'s hair color and eye color. Take permanent features from the character descriptions, and current clothing, injuries and condition from the message, including any status or info block in it; when they differ, the message wins. Never use names. Include {{user}} if they are present.',
+    'Only what can be seen in that one instant: no thoughts, or what happens before or after. Use plain, literal wording without metaphors.',
+    'Output only the paragraph.',
 ].join('\n');
-
-/** v5 의 기본 지시문. 사용자가 고치지 않았으면 처음 문장으로 되돌린다 */
-export const LEGACY_SCENE_PROMPT_V5 = [
-    'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
-    '',
-    'Order (the image generator follows the first words most strongly):',
-    '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
-    '2. The number of people, e.g. "two people, 1man 1woman" or "1girl, solo".',
-    '3. The place in only 2-4 keywords: "indoors" or "outdoors" first, then the location (e.g. "indoors, bedroom").',
-    '4. EVERY person present in the moment, including the user\'s persona if they are there: their appearance (hair, eyes, body), clothing, ONE simple pose and facial expression for each.',
-    '5. Key objects around them, time of day, lighting and mood (e.g. "bed, blanket, bedside lamp, night, warm dim light, worried mood").',
-    '',
-    'Rules:',
-    '- Each person gets only one pose and at most one hand action. Do not describe hands unless essential.',
-    '- If two people touch, keep it simple (e.g. leaning on a shoulder, holding hands) and add no other arm actions.',
-    '- Do not include any art style, medium or quality words; describe only the content.',
-    '- Never include text, captions, speech bubbles, signs or timestamps.',
-    '',
-    'Output only the keyword list, nothing else.',
-].join('\n');
-
-/** v4 의 기본 지시문. 사용자가 고치지 않았으면 처음 문장으로 되돌린다 */
-export const LEGACY_SCENE_PROMPT_V4 = [
-    'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
-    '',
-    'Order:',
-    '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
-    '2. The number of people, e.g. "two people, 1man 1woman" or "1girl, solo".',
-    '3. EVERY person present in the moment, including the user\'s persona if they are there: their appearance (hair, eyes, body), clothing, ONE simple pose and facial expression for each.',
-    '4. The place, time of day, lighting and mood.',
-    '',
-    'Rules:',
-    '- Each person gets only one pose and at most one hand action. Do not describe hands unless essential.',
-    '- If two people touch, keep it simple (e.g. leaning on a shoulder, holding hands) and add no other arm actions.',
-    '- Do not include any art style, medium or quality words; describe only the content.',
-    '- Never include text, captions, speech bubbles, signs or timestamps.',
-    '',
-    'Output only the keyword list, nothing else.',
-].join('\n');
-
-/** v2·v3 의 기본 지시문(지금 기본값과 같다) */
-export const LEGACY_SCENE_PROMPT_V2 = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
-
-/** v1 의 기본 지시문. 사용자가 고치지 않았으면 v2 에서 새 기본값으로 바꾼다 */
-export const LEGACY_SCENE_PROMPT_V1 = 'Ignore previous instructions. Describe the current scene of the story as a comma-separated list of short keywords for an image generator: characters with their appearance, clothing, pose and expression, then the place, lighting and mood. Write it in English. Output only the keyword list, nothing else.';
 
 /** 배지 위치 '세로-가로'. 설정 화면의 선택지 순서와 같다 */
 export const BADGE_POSITIONS = Object.freeze(['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right']);
@@ -119,7 +60,7 @@ export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
 /** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
 export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
 
-export const SETTINGS_VERSION = 7;
+export const SETTINGS_VERSION = 8;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
