@@ -705,7 +705,7 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-settings .stng-group-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     margin: 0 -10px 2px;
     padding: 4px 10px 6px;
     border-bottom: 1px solid var(--stng-line);
@@ -715,25 +715,32 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 .stng-settings .stng-group-title i {
-    width: var(--stng-check);
-    margin-left: -4px;
+    flex: 0 0 var(--stng-check);
     color: var(--SmartThemeQuoteColor);
     text-align: center;
 }
 
 /* 체크박스 줄 */
 .stng-settings .stng-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0;
+    display: grid;
+    grid-template-columns: var(--stng-check) minmax(0, 1fr);
+    align-items: start;
     padding: 6px 0 4px;
     cursor: pointer;
 }
 
+/* 체크박스 칸 너비를 고정해 ST 체크박스 크기(데스크톱·휴대폰이 다르다)와 상관없이 글자가 같은 선에서 시작한다 */
 .stng-settings .stng-item input[type="checkbox"] {
-    flex: 0 0 auto;
+    justify-self: start;
     width: auto;
-    margin: 2px calc(var(--stng-check) - 15px) 0 0;
+    margin: 2px 0 0;
+}
+
+/* 체크박스 없는 줄(드롭다운·설명·접은 지시문)도 체크박스 글자선에 맞춰 들여 쓴다 */
+.stng-settings .stng-group > .stng-inline,
+.stng-settings .stng-group > .stng-hint,
+.stng-settings .stng-group > .stng-details {
+    padding-left: var(--stng-check);
 }
 
 .stng-settings .stng-item-text {
@@ -764,13 +771,80 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 .stng-settings .stng-sub .stng-inline > span {
-    flex-basis: calc(8em - var(--stng-check) - 12px);
+    flex-basis: calc(8em - 12px);
 }
 
 .stng-settings .stng-inline .text_pole {
     flex: 1 1 auto;
     min-width: 0;
     margin: 0;
+}
+
+/* 오른쪽이 여러 줄일 때(배지 항목) 이름을 첫 줄에 맞춘다 */
+.stng-settings .stng-inline.stng-inline-top {
+    align-items: flex-start;
+}
+
+/* 이름을 첫 줄 알약 버튼의 가운데 높이에 맞춘다 */
+.stng-settings .stng-inline.stng-inline-top > span {
+    padding-top: 6px;
+}
+
+/* 배지 항목: 켜고 끄는 알약 버튼(작은 체크박스보다 누르기 쉽게). 체크박스는 보이지 않게 두고 상태만 쓴다 */
+.stng-settings .stng-checks {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+.stng-settings .stng-checks label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 11px;
+    /* 테마 테두리색은 어두운 배경에서 안 보일 때가 많아 글자색을 옅게 쓴다 */
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent);
+    border-radius: 999px;
+    font-size: 0.9em;
+    line-height: 1.2;
+    background-color: var(--black30a);
+    opacity: 0.75;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.stng-settings .stng-checks input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.stng-settings .stng-checks label:has(input:checked) {
+    border-color: var(--SmartThemeQuoteColor);
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 22%, transparent);
+    opacity: 1;
+}
+
+.stng-settings .stng-checks label:has(input:checked)::before {
+    content: '\f00c';
+    color: var(--SmartThemeQuoteColor);
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.8em;
+}
+
+.stng-settings .stng-checks label:has(input:focus-visible) {
+    outline: 1px solid var(--interactable-outline-color);
+    outline-offset: 2px;
 }
 
 .stng-settings .stng-inline .stng-number {

@@ -43,15 +43,25 @@
                             <option value="bottom-right" data-i18n="nanogpt_tools.badge_position_bottom_right">Bottom right</option>
                         </select>
                     </label>
-                    <label class="stng-inline" for="st_nanogpt_badge_content">
+                    <!-- 여러 개 고르기. 값은 index.js 가 badgeItems 배열로 저장한다 -->
+                    <div class="stng-inline stng-inline-top">
                         <span data-i18n="nanogpt_tools.setting_badge_content">Shows</span>
-                        <select id="st_nanogpt_badge_content" class="text_pole" data-setting="badgeContent">
-                            <option value="both" data-i18n="nanogpt_tools.badge_both">Balance + subscription</option>
-                            <option value="balance" data-i18n="nanogpt_tools.badge_balance">Balance only</option>
-                            <option value="subscription" data-i18n="nanogpt_tools.badge_subscription">Subscription usage only</option>
+                        <div id="st_nanogpt_badge_items" class="stng-checks">
+                            <label><input type="checkbox" value="balance" /><span data-i18n="nanogpt_tools.badge_item_balance">Balance</span></label>
+                            <label><input type="checkbox" value="week" /><span data-i18n="nanogpt_tools.badge_item_week">Tokens this week</span></label>
+                            <label><input type="checkbox" value="day" /><span data-i18n="nanogpt_tools.badge_item_day">Tokens today</span></label>
+                            <label><input type="checkbox" value="images" /><span data-i18n="nanogpt_tools.badge_item_images">Images today</span></label>
+                        </div>
+                    </div>
+                    <label class="stng-inline" for="st_nanogpt_badge_unit">
+                        <span data-i18n="nanogpt_tools.setting_badge_unit">Usage as</span>
+                        <select id="st_nanogpt_badge_unit" class="text_pole" data-setting="badgeUnit">
+                            <option value="percent" data-i18n="nanogpt_tools.badge_unit_percent">Percent (76%)</option>
+                            <option value="used" data-i18n="nanogpt_tools.badge_unit_used">Used / limit (45.7M/60M)</option>
+                            <option value="remaining" data-i18n="nanogpt_tools.badge_unit_remaining">Left (14.3M left)</option>
                         </select>
                     </label>
-                    <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_sub_hint">Top = below the top bar, bottom = above the message box. Subscription usage = share of this week's input tokens used.</small>
+                    <small class="stng-hint" data-i18n="nanogpt_tools.setting_badge_sub_hint">Top = below the top bar, bottom = above the message box. Token and image items show only with an active subscription; if nothing else shows, the balance does.</small>
                 </div>
 
                 <label class="stng-item" for="st_nanogpt_auto">

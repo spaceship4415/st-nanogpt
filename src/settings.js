@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_POSITIONS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -71,6 +71,10 @@ function normalize(stored) {
     if (!BADGE_POSITIONS.includes(result.badgePosition)) {
         result.badgePosition = DEFAULT_SETTINGS.badgePosition;
     }
+    result.badgeItems = Array.isArray(result.badgeItems)
+        ? BADGE_ITEMS.filter(item => result.badgeItems.includes(item))
+        : [...DEFAULT_SETTINGS.badgeItems];
+    if (!BADGE_UNITS.includes(result.badgeUnit)) result.badgeUnit = DEFAULT_SETTINGS.badgeUnit;
     result.sceneContextMessages = clampContext(result.sceneContextMessages);
     // 프롬프트 칸은 열 때마다 빈칸이라 예전 '마지막 프롬프트'는 더 쓰지 않는다
     delete result.lastPrompt;
@@ -95,6 +99,14 @@ function migrate(target) {
     if (target.version < 2) {
         if (target.scenePrompt === LEGACY_SCENE_PROMPT_V1) target.scenePrompt = DEFAULT_SCENE_PROMPT;
         target.version = 2;
+        target.__changed = true;
+    }
+    // v2 → v3: 배지 '표시 내용' 하나 고르기(badgeContent)가 항목 여러 개 고르기(badgeItems)로
+    if (target.version < 3) {
+        const items = { balance: ['balance'], subscription: ['week'], both: ['balance', 'week'] }[target.badgeContent];
+        if (items) target.badgeItems = items;
+        delete target.badgeContent;
+        target.version = 3;
         target.__changed = true;
     }
 }

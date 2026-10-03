@@ -182,26 +182,37 @@ function toMillis(value) {
 }
 
 /**
- * 배지에 들어갈 짧은 문구.
+ * 배지에 들어갈 짧은 문구. 예: '$12.35 · 주 45.7M/60M · 이미지 73/100'
  * @param {Credits} data
- * @param {string} mode 'balance' | 'subscription' | 'both'
+ * @param {string[]} items 보여 줄 항목(BADGE_ITEMS)
+ * @param {string} unit 구독 항목 표시 방식(BADGE_UNITS)
  */
-export function getBadgeText(data, mode) {
+export function getBadgeText(data, items, unit) {
     const parts = [];
     const sub = data.subscription?.active ? data.subscription : null;
 
-    if (mode !== 'subscription' || !sub) {
-        parts.push(formatUsd(data.usd_balance));
-    }
-    if (mode !== 'balance' && sub) {
-        const weekly = sub.weekly_tokens;
-        const daily = sub.daily_tokens;
-        if (weekly) {
-            parts.push(tr('badge_week', 'Wk {0}%', Math.round(percentOf(weekly, sub.limits.weeklyInputTokens))));
-        } else if (daily) {
-            parts.push(tr('badge_day', 'Day {0}%', Math.round(percentOf(daily, sub.limits.dailyInputTokens))));
+    /** @param {UsageBucket|null|undefined} bucket @param {number} limit */
+    const usage = (bucket, limit) => {
+        if (unit === 'used') return limit > 0 ? `${formatCount(bucket.used)}/${formatCount(limit)}` : formatCount(bucket.used);
+        if (unit === 'remaining') return tr('badge_left', '{0} left', formatCount(bucket.remaining));
+        return `${Math.round(percentOf(bucket, limit))}%`;
+    };
+
+    for (const item of items) {
+        if (item === 'balance') {
+            parts.push(formatUsd(data.usd_balance));
+        } else if (sub && item === 'week') {
+            // 주간 한도가 없는 구독이면 일간으로(일간도 골랐으면 겹치므로 뺀다)
+            if (sub.weekly_tokens) parts.push(tr('badge_week', 'Wk {0}', usage(sub.weekly_tokens, sub.limits.weeklyInputTokens)));
+            else if (sub.daily_tokens && !items.includes('day')) parts.push(tr('badge_day', 'Day {0}', usage(sub.daily_tokens, sub.limits.dailyInputTokens)));
+        } else if (sub && item === 'day' && sub.daily_tokens) {
+            parts.push(tr('badge_day', 'Day {0}', usage(sub.daily_tokens, sub.limits.dailyInputTokens)));
+        } else if (sub && item === 'images' && sub.daily_images) {
+            parts.push(tr('badge_images', 'Img {0}', usage(sub.daily_images, sub.limits.dailyImages)));
         }
     }
+    // 구독 항목만 골랐는데 구독이 없거나, 아무것도 안 골랐으면 잔액
+    if (!parts.length) parts.push(formatUsd(data.usd_balance));
     return parts.join(' · ');
 }
 

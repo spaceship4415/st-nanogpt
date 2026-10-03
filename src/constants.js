@@ -46,7 +46,13 @@ export const LEGACY_SCENE_PROMPT_V1 = 'Ignore previous instructions. Describe th
 /** 배지 위치 '세로-가로'. 설정 화면의 선택지 순서와 같다 */
 export const BADGE_POSITIONS = Object.freeze(['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right']);
 
-export const SETTINGS_VERSION = 2;
+/** 배지에 넣을 수 있는 항목. 이 순서대로 보인다 */
+export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
+
+/** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
+export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
+
+export const SETTINGS_VERSION = 3;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
@@ -54,8 +60,10 @@ export const DEFAULT_SETTINGS = Object.freeze({
     badge: true,
     // 배지 위치(BADGE_POSITIONS): 상단 = 상단바 바로 아래 / 하단 = 입력창 바로 위
     badgePosition: 'top-right',
-    // 배지에 보여 줄 것: 'balance' | 'subscription' | 'both'
-    badgeContent: 'both',
+    // 배지에 보여 줄 항목(BADGE_ITEMS). 구독 항목은 구독 중일 때만 보이고, 보일 게 없으면 잔액
+    badgeItems: ['balance', 'week'],
+    // 구독 항목을 보여 주는 방식(BADGE_UNITS)
+    badgeUnit: 'percent',
     // NanoGPT 로 채팅 응답을 받거나 이미지를 만든 뒤 사용량을 자동으로 새로고침
     autoRefresh: true,
     // 주기적으로 새로고침하는 간격(분). 0 = 끔. 화면이 보일 때만 돈다

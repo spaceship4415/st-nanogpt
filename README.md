@@ -8,7 +8,7 @@ It only uses the NanoGPT endpoints already in SillyTavern. Your API key stays in
 
 ## Features
 
-- **Usage badge**: a small floating button below the top bar or above the message box (left, center or right) showing your balance and this week's subscription usage, e.g. `$12.35 · Wk 42%`. Tap it to open the panel.
+- **Usage badge**: a small floating button below the top bar or above the message box (left, center or right) showing the usage you pick: balance, tokens this week, tokens today and images today, with subscription usage as a percent, used/limit or what's left (e.g. `$12.35 · Wk 42%`, `Wk 45.7M/60M · Img 73/100`). Tap it to open the panel.
 - **Usage tab**: USD/NANO balance, subscription status and end date, and progress bars for weekly tokens, daily tokens and daily images, with when each one resets.
 - **Refresh**: two separate options.
   - **Refresh after use**: checks right after a NanoGPT reply or a generated image. Back-to-back use is checked at most once every 15 seconds.

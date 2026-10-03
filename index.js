@@ -35,6 +35,7 @@ async function mountSettingsPanel() {
     refreshDependents();
     onUsageChange(renderSettingsStatus);
     renderSettingsStatus();
+    onUsageChange(renderBadgeItemOptions);
     $panel.find('#st_nanogpt_scene_context').val(settings.sceneContextMessages).on('change', function () {
         const value = clampContext($(this).val());
         $(this).val(value);
@@ -47,6 +48,15 @@ async function mountSettingsPanel() {
             refreshBadge();
         });
     });
+    // 배지 항목: 여러 개 고르기라 배열로 저장한다
+    const $badgeItems = $panel.find('#st_nanogpt_badge_items input[type="checkbox"]');
+    $badgeItems.each(function () {
+        this.checked = settings.badgeItems.includes(this.value);
+    }).on('change', () => {
+        setSetting('badgeItems', $badgeItems.filter(':checked').map((_, el) => el.value).get());
+        refreshBadge();
+    });
+    renderBadgeItemOptions();
     $panel.find('.stng-scene-reset').on('click', () => {
         $('#st_nanogpt_scene_prompt').val(DEFAULT_SCENE_PROMPT).trigger('input');
     });
@@ -121,6 +131,24 @@ function refreshDependents() {
     $('#st_nanogpt_settings .stng-sub[data-depends]').each(function () {
         $(this).toggleClass('stng-off', !settings[this.dataset.depends]);
     });
+}
+
+/**
+ * 배지 항목 중 지금 구독 데이터에 없는 것(예: 일간 한도가 없는 구독의 '오늘 토큰')은 체크박스를 숨긴다.
+ * 사용량을 아직 못 받았으면 다 보여 준다. 구독 항목이 하나도 없으면 '사용량 표시'도 숨긴다
+ */
+function renderBadgeItemOptions() {
+    const { credits } = getUsageState();
+    const sub = credits?.subscription?.active ? credits.subscription : null;
+    const buckets = { week: 'weekly_tokens', day: 'daily_tokens', images: 'daily_images' };
+    let anyUsage = false;
+    $('#st_nanogpt_badge_items input[type="checkbox"]').each(function () {
+        const bucket = buckets[this.value];
+        const available = !bucket || !credits || !!sub?.[bucket];
+        if (bucket && available) anyUsage = true;
+        $(this).closest('label').prop('hidden', !available);
+    });
+    $('label[for="st_nanogpt_badge_unit"]').prop('hidden', !anyUsage);
 }
 
 /** 설정창 맨 위 상태 줄: 키 연결 여부와 잔액 */

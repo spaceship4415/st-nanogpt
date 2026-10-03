@@ -40,7 +40,7 @@ export function refreshBadge() {
     placeBadge(badge, settings.badgePosition);
 
     let text = '';
-    if (credits) text = getBadgeText(credits, settings.badgeContent);
+    if (credits) text = getBadgeText(credits, settings.badgeItems, settings.badgeUnit);
     else if (loading) text = '…';
     else if (error) text = '!';
 
