@@ -1,0 +1,76 @@
+<div id="st_nanogpt_settings" class="stng-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b><i class="fa-solid fa-bolt stng-header-icon"></i><span data-i18n="nanogpt_tools.settings_title">NanoGPT Tools</span></b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content stng-settings-body">
+            <button type="button" class="menu_button stng-btn stng-open-panel">
+                <i class="fa-solid fa-up-right-from-square"></i>
+                <span data-i18n="nanogpt_tools.open_panel">Open NanoGPT panel</span>
+            </button>
+
+            <section class="stng-group">
+                <div class="stng-group-title">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span data-i18n="nanogpt_tools.settings_group_usage">Usage</span>
+                </div>
+
+                <label class="stng-item" for="st_nanogpt_badge">
+                    <input id="st_nanogpt_badge" type="checkbox" data-setting="badge" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge">Show a usage badge on screen</span>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_hint">A small button just above the message box. Tap it to open the panel. Hidden while no NanoGPT key is saved.</small>
+                    </span>
+                </label>
+
+                <label class="stng-field" for="st_nanogpt_badge_content">
+                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_badge_content">Badge shows</span>
+                    <select id="st_nanogpt_badge_content" class="text_pole" data-setting="badgeContent">
+                        <option value="both" data-i18n="nanogpt_tools.badge_both">Balance + subscription</option>
+                        <option value="balance" data-i18n="nanogpt_tools.badge_balance">Balance only</option>
+                        <option value="subscription" data-i18n="nanogpt_tools.badge_subscription">Subscription usage only</option>
+                    </select>
+                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_badge_content_hint">Subscription usage is the share of this week's input tokens already used. Without a subscription the balance is shown.</small>
+                </label>
+
+                <label class="stng-item" for="st_nanogpt_auto">
+                    <input id="st_nanogpt_auto" type="checkbox" data-setting="autoRefresh" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_auto">Refresh automatically</span>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_auto_hint">After each reply from NanoGPT and each generated image. At most every 15 seconds.</small>
+                    </span>
+                </label>
+            </section>
+
+            <section class="stng-group">
+                <div class="stng-group-title">
+                    <i class="fa-solid fa-image"></i>
+                    <span data-i18n="nanogpt_tools.settings_group_image">Image</span>
+                </div>
+
+                <label class="stng-item" for="st_nanogpt_hidden">
+                    <input id="st_nanogpt_hidden" type="checkbox" data-setting="sendHidden" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_hidden">Hide image messages from the AI</span>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_hidden_hint">Images sent to the chat are shown to you but their prompt is not sent to the model.</small>
+                    </span>
+                </label>
+
+                <label class="stng-field" for="st_nanogpt_scene_prompt">
+                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_prompt">Instruction for "From chat"</span>
+                    <textarea id="st_nanogpt_scene_prompt" class="text_pole" rows="4" data-setting="scenePrompt"></textarea>
+                    <span class="stng-row stng-spread">
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_prompt_hint">Sent to your chat API together with the chat to write an image prompt.</small>
+                        <button type="button" class="menu_button stng-btn stng-btn-small stng-scene-reset">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span data-i18n="nanogpt_tools.reset">Reset</span>
+                        </button>
+                    </span>
+                </label>
+            </section>
+
+            <small class="stng-muted" data-i18n="nanogpt_tools.commands_hint">Commands: /nanogpt [usage|image], /nanousage, /nanoimage prompt</small>
+        </div>
+    </div>
+</div>

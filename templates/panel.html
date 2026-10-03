@@ -1,0 +1,99 @@
+<div class="stng-panel">
+    <div class="stng-panel-head">
+        <h3><i class="fa-solid fa-bolt"></i> NanoGPT</h3>
+    </div>
+
+    <div class="stng-tabs" role="tablist">
+        <button type="button" class="stng-tab" role="tab" data-tab="usage">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span data-i18n="nanogpt_tools.tab_usage">Usage</span>
+        </button>
+        <button type="button" class="stng-tab" role="tab" data-tab="image">
+            <i class="fa-solid fa-image"></i>
+            <span data-i18n="nanogpt_tools.tab_image">Image</span>
+        </button>
+    </div>
+
+    <section class="stng-tab-body" data-tab="usage" role="tabpanel"></section>
+
+    <section class="stng-tab-body stng-image" data-tab="image" role="tabpanel">
+        <div class="stng-notice stng-img-nokey" hidden>
+            <i class="fa-solid fa-key"></i>
+            <span data-i18n="nanogpt_tools.no_key">No NanoGPT API key. Save one in the API Connections panel (Chat Completion → NanoGPT).</span>
+        </div>
+
+        <div class="stng-img-form">
+            <label class="stng-field">
+                <span class="stng-field-label" data-i18n="nanogpt_tools.model">Model</span>
+                <span class="stng-row">
+                    <select class="text_pole stng-img-model"></select>
+                    <button type="button" class="menu_button stng-btn stng-icon-btn stng-img-models-refresh" title="Reload models" data-i18n="[title]nanogpt_tools.reload_models">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </span>
+            </label>
+
+            <label class="stng-field">
+                <span class="stng-field-label" data-i18n="nanogpt_tools.size">Size</span>
+                <select class="text_pole stng-img-size"></select>
+            </label>
+
+            <label class="stng-field">
+                <span class="stng-field-label stng-row stng-spread">
+                    <span data-i18n="nanogpt_tools.prompt">Prompt</span>
+                    <button type="button" class="menu_button stng-btn stng-btn-small stng-img-scene" title="Uses your chat API to describe the current scene" data-i18n="[title]nanogpt_tools.scene_hint">
+                        <i class="fa-solid fa-feather"></i>
+                        <span data-i18n="nanogpt_tools.scene">From chat</span>
+                    </button>
+                </span>
+                <textarea class="text_pole stng-img-prompt" rows="4" placeholder="a cozy cabin in the snow at night, warm light, ..." ></textarea>
+            </label>
+
+            <details class="stng-advanced">
+                <summary data-i18n="nanogpt_tools.advanced">Advanced</summary>
+                <label class="stng-field">
+                    <span class="stng-field-label" data-i18n="nanogpt_tools.negative">Negative prompt</span>
+                    <textarea class="text_pole stng-img-negative" rows="2"></textarea>
+                </label>
+                <div class="stng-row stng-gap">
+                    <label class="stng-field stng-grow">
+                        <span class="stng-field-label" data-i18n="nanogpt_tools.steps">Steps</span>
+                        <input type="number" class="text_pole stng-img-steps" min="1" max="150" step="1" inputmode="numeric" />
+                    </label>
+                    <label class="stng-field stng-grow">
+                        <span class="stng-field-label" data-i18n="nanogpt_tools.scale">CFG scale</span>
+                        <input type="number" class="text_pole stng-img-scale" min="0" max="30" step="0.5" inputmode="decimal" />
+                    </label>
+                </div>
+                <small class="stng-muted" data-i18n="nanogpt_tools.advanced_hint">Some models ignore steps, CFG scale and the negative prompt.</small>
+            </details>
+
+            <button type="button" class="menu_button stng-btn stng-primary stng-img-generate">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span data-i18n="nanogpt_tools.generate">Generate</span>
+            </button>
+            <small class="stng-muted stng-img-quota"></small>
+            <div class="stng-img-status" hidden></div>
+        </div>
+
+        <div class="stng-img-result" hidden>
+            <img class="stng-img-preview" alt="" />
+            <small class="stng-muted stng-img-meta"></small>
+            <div class="stng-img-actions">
+                <button type="button" class="menu_button stng-btn stng-img-send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span data-i18n="nanogpt_tools.send">To chat</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-download">
+                    <i class="fa-solid fa-download"></i>
+                    <span data-i18n="nanogpt_tools.download">Save</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-reuse">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                    <span data-i18n="nanogpt_tools.reuse">Reuse prompt</span>
+                </button>
+            </div>
+            <div class="stng-img-strip"></div>
+        </div>
+    </section>
+</div>

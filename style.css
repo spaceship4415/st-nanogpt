@@ -1,0 +1,557 @@
+/*
+ * 모바일 우선: 기본 규칙은 좁은 터치 화면 기준이고, 넓은 화면은 아래 min-width 미디어 쿼리에서만 보정한다.
+ * 터치 대상은 최소 44px 높이를 지킨다.
+ */
+
+/* ── 공통 ── */
+.stng-muted {
+    opacity: 0.65;
+    line-height: 1.35;
+}
+
+.stng-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stng-spread {
+    justify-content: space-between;
+}
+
+.stng-gap {
+    gap: 10px;
+}
+
+.stng-grow {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.stng-btn.menu_button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+.stng-btn.stng-btn-small {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 0.9em;
+}
+
+.stng-icon-btn.menu_button {
+    flex-shrink: 0;
+    width: 44px;
+    padding: 0;
+}
+
+.stng-btn.stng-primary {
+    width: 100%;
+    font-weight: bold;
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 30%, var(--SmartThemeBlurTintColor));
+}
+
+.stng-btn.stng-primary.stng-busy {
+    background-color: color-mix(in srgb, #d9534f 35%, var(--SmartThemeBlurTintColor));
+}
+
+.stng-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.stng-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px dashed var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.stng-notice i {
+    margin-top: 2px;
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+}
+
+.stng-field-label {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.stng-field .text_pole {
+    width: 100%;
+    margin: 0;
+}
+
+.stng-field textarea.text_pole {
+    resize: vertical;
+}
+
+/* 패널 입력칸: 44px 터치 높이, 16px 글자(iOS 가 확대하지 않게). 설정 서랍은 ST 기본 밀도를 따른다 */
+.stng-panel .stng-field .text_pole {
+    min-height: 44px;
+    font-size: 16px;
+}
+
+.stng-panel .stng-field textarea.text_pole {
+    min-height: 0;
+}
+
+/* ── 떠 있는 배지 ── 입력창 바로 위 오른쪽(채팅 마지막 줄 끝 위에 겹친다) */
+.stng-badge-anchor {
+    position: relative;
+    height: 0;
+}
+
+.stng-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    max-width: calc(100vw - 16px);
+    padding: 0 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 999px;
+    color: var(--SmartThemeBodyColor);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    background-color: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    box-shadow: 0 1px 4px var(--black30a);
+    opacity: 0.85;
+    cursor: pointer;
+}
+
+/* 보이는 크기는 작게, 누르는 영역은 44px */
+.stng-badge::before {
+    content: '';
+    position: absolute;
+    inset: -6px -2px;
+}
+
+.stng-badge:hover,
+.stng-badge:focus-visible {
+    opacity: 1;
+}
+
+.stng-badge i {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-badge.stng-loading i {
+    animation: stng-pulse 1s ease-in-out infinite;
+}
+
+.stng-badge.stng-error i {
+    color: #d9534f;
+}
+
+@keyframes stng-pulse {
+    50% { opacity: 0.3; }
+}
+
+/* 마법봉 메뉴 항목의 잔액 */
+#stng_wand .stng-wand-balance {
+    margin-left: auto;
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── 패널 ── */
+/* 아래 display:flex 규칙들이 hidden 속성을 이기지 않게 */
+.stng-panel [hidden] {
+    display: none !important;
+}
+
+.stng-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.stng-panel-head h3 {
+    margin: 0;
+}
+
+.stng-panel-head h3 i {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    background-color: var(--black30a);
+}
+
+.stng-tab {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 9px;
+    color: inherit;
+    font: inherit;
+    background: transparent;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.stng-tab.stng-active {
+    opacity: 1;
+    font-weight: bold;
+    background-color: var(--SmartThemeBlurTintColor);
+    box-shadow: 0 1px 3px var(--black30a);
+}
+
+.stng-tab-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 사용량 */
+.stng-usage {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.stng-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stng-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 12px;
+    background-color: var(--black30a);
+}
+
+.stng-card-label {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.stng-card-value {
+    font-size: 1.35em;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+}
+
+.stng-card-sub {
+    font-size: 0.8em;
+    opacity: 0.7;
+    overflow-wrap: anywhere;
+}
+
+.stng-ok {
+    color: #5cb85c;
+}
+
+.stng-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.stng-bar-head,
+.stng-bar-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.stng-bar-value {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.stng-bar-foot {
+    margin-top: 4px;
+    font-size: 0.8em;
+    opacity: 0.65;
+}
+
+.stng-bar-track {
+    height: 10px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: var(--black50a);
+}
+
+.stng-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    background-color: var(--SmartThemeQuoteColor);
+    transition: width 0.3s ease;
+}
+
+.stng-bar-fill.stng-warn {
+    background-color: #f0ad4e;
+}
+
+.stng-bar-fill.stng-danger {
+    background-color: #d9534f;
+}
+
+.stng-usage-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* 이미지 */
+.stng-img-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stng-advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 12px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+}
+
+.stng-advanced[open] {
+    padding-bottom: 12px;
+}
+
+.stng-advanced > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.stng-advanced > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* display:flex 로 기본 펼침 표시가 사라져서 직접 그린다 */
+.stng-advanced > summary::after {
+    content: '\f078';
+    margin-left: auto;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.8em;
+    transition: transform 0.2s ease;
+}
+
+.stng-advanced[open] > summary::after {
+    transform: rotate(180deg);
+}
+
+.stng-advanced > .stng-field,
+.stng-advanced > .stng-row {
+    margin-bottom: 10px;
+}
+
+.stng-img-quota {
+    text-align: center;
+}
+
+.stng-img-status {
+    padding: 10px 12px;
+    border-radius: 10px;
+    line-height: 1.4;
+    background-color: var(--black30a);
+}
+
+.stng-img-status[data-kind="error"] {
+    color: #ff8a80;
+}
+
+.stng-img-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stng-img-preview {
+    display: block;
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background-color: var(--black50a);
+    cursor: zoom-in;
+}
+
+.stng-img-meta {
+    overflow-wrap: anywhere;
+}
+
+/* 휴대폰: 세 버튼을 한 줄에 나눠 담고, 글자가 길면 줄바꿈 */
+.stng-img-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+/* 아이콘 위, 글자 아래로 쌓아 좁은 칸에서도 가로로 읽히게 */
+.stng-img-actions .stng-btn.menu_button {
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 4px;
+    white-space: normal;
+    word-break: keep-all;
+    text-align: center;
+    font-size: 0.85em;
+    line-height: 1.2;
+}
+
+.stng-img-strip {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+}
+
+.stng-thumb {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: var(--black50a);
+    cursor: pointer;
+}
+
+.stng-thumb.stng-selected {
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.stng-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ── 확장 설정 패널 ──
+   다른 확장 설정과 같은 밀도로(44px 규칙은 패널·배지에만). 체크박스도 ST 기본 크기 그대로 둔다.
+   .stng-settings-body(inline-drawer-content)에는 display 를 주지 않는다 — ST 가 display:none 으로 접고 펴기 때문 */
+.stng-settings .stng-header-icon {
+    margin-right: 6px;
+    opacity: 0.8;
+}
+
+.stng-settings .stng-btn.menu_button {
+    min-height: 0;
+    padding: 4px 10px;
+}
+
+.stng-settings .stng-open-panel.menu_button {
+    width: 100%;
+    margin: 6px 0;
+}
+
+.stng-settings .stng-group {
+    margin: 8px 0;
+    padding: 6px 10px 4px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
+.stng-settings .stng-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0 6px;
+    font-size: 0.85em;
+    font-weight: bold;
+    opacity: 0.75;
+}
+
+.stng-settings .stng-group-title i {
+    width: 1.1em;
+    color: var(--SmartThemeQuoteColor);
+    text-align: center;
+}
+
+.stng-settings .stng-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+}
+
+.stng-settings .stng-item input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.stng-settings .stng-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.stng-settings .stng-item-title {
+    line-height: 1.35;
+}
+
+.stng-settings .stng-field {
+    gap: 4px;
+    padding: 5px 0;
+}
+
+.stng-settings .stng-item + .stng-item,
+.stng-settings .stng-item + .stng-field,
+.stng-settings .stng-field + .stng-item {
+    border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 50%, transparent);
+}
+
+@media (min-width: 768px) {
+    .stng-img-actions .stng-btn.menu_button {
+        flex-direction: row;
+        gap: 8px;
+        min-height: 44px;
+        white-space: nowrap;
+        font-size: 0.9em;
+    }
+}
