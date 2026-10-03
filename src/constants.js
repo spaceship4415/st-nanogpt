@@ -38,7 +38,26 @@ export const SIZE_PRESETS = Object.freeze([
     { value: '512x512', label: 'size_small', english: 'Small square' },
 ]);
 
-export const DEFAULT_SCENE_PROMPT = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
+export const DEFAULT_SCENE_PROMPT = [
+    'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
+    '',
+    'Order:',
+    '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
+    '2. The number of people, e.g. "two people, 1man 1woman" or "1girl, solo".',
+    '3. EVERY person present in the moment, including the user\'s persona if they are there: their appearance (hair, eyes, body), clothing, ONE simple pose and facial expression for each.',
+    '4. The place, time of day, lighting and mood.',
+    '',
+    'Rules:',
+    '- Each person gets only one pose and at most one hand action. Do not describe hands unless essential.',
+    '- If two people touch, keep it simple (e.g. leaning on a shoulder, holding hands) and add no other arm actions.',
+    '- Do not include any art style, medium or quality words; describe only the content.',
+    '- Never include text, captions, speech bubbles, signs or timestamps.',
+    '',
+    'Output only the keyword list, nothing else.',
+].join('\n');
+
+/** v2·v3 의 기본 지시문. 사용자가 고치지 않았으면 v4 에서 새 기본값으로 바꾼다 */
+export const LEGACY_SCENE_PROMPT_V2 = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
 
 /** v1 의 기본 지시문. 사용자가 고치지 않았으면 v2 에서 새 기본값으로 바꾼다 */
 export const LEGACY_SCENE_PROMPT_V1 = 'Ignore previous instructions. Describe the current scene of the story as a comma-separated list of short keywords for an image generator: characters with their appearance, clothing, pose and expression, then the place, lighting and mood. Write it in English. Output only the keyword list, nothing else.';
@@ -52,7 +71,7 @@ export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
 /** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
 export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
 
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 4;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,

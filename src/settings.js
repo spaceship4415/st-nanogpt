@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -107,6 +107,12 @@ function migrate(target) {
         if (items) target.badgeItems = items;
         delete target.badgeContent;
         target.version = 3;
+        target.__changed = true;
+    }
+    // v3 → v4: 기본 지시문에 인원수·페르소나 포함·자세 하나·화풍 단어 금지 등을 더함. 고치지 않은 옛 기본값만 바꾼다
+    if (target.version < 4) {
+        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V2) target.scenePrompt = DEFAULT_SCENE_PROMPT;
+        target.version = 4;
         target.__changed = true;
     }
 }
