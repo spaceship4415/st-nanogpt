@@ -202,8 +202,11 @@ function buildScenePrompt(messageId) {
     return parts.join('\n\n');
 }
 
-/** 답의 최대 길이(토큰). 키워드 목록이라 짧게 */
-const SCENE_RESPONSE_LENGTH = 300;
+/**
+ * 답의 최대 길이(토큰). 키워드 목록 자체는 짧지만, 생각(추론)하는 모델은 생각에도 이 한도를 써서
+ * 너무 작으면 답이 몇 단어에서 끊긴다
+ */
+const SCENE_RESPONSE_LENGTH = 1200;
 
 /**
  * '프롬프트 자동생성'에 쓸 수 있는 연결 프로필 목록. 연결 관리자 확장이 꺼져 있으면 null.
@@ -265,6 +268,8 @@ export async function promptFromScene(messageId, signal) {
     const text = String(result ?? '')
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
         .replace(/^["'\s]+|["'\s]+$/g, '')
+        // 지시문의 순서 목록을 따라 줄머리에 번호·글머리표를 붙여 답하는 모델이 있다
+        .replace(/^[ \t]*(?:\d+[.)]|[-*•])[ \t]+/gm, '')
         .replace(/\s*\n+\s*/g, ', ')
         .replace(/\s*,(\s*,)+/g, ',');
     // 키는 요청을 보낸 시점의 채팅·메시지 내용으로 정해 두었으니, 그사이 채팅을 옮겨도 맞는 자리에 남는다
