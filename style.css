@@ -1482,9 +1482,16 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 /* 이미지 크게 보기(누르면 닫힘) */
+/* inset:0 대신 화면 크기를 직접 준다: ST 가 html 에 transform 을 걸어 두어, 채팅에서 열면(body 에 붙음)
+   고정 위치의 기준이 높이 0 인 html 이 되어 덮개가 띠처럼 납작해졌다 */
 .stng-lightbox {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    box-sizing: border-box;
     z-index: 10000;
     display: flex;
     align-items: center;
