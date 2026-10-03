@@ -6,6 +6,7 @@ import { saveBase64AsFile } from '../../../../utils.js';
 import { fetchImageModels, generateImage, hasNanoGptKey, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
+import { openLightbox } from './lightbox.js';
 import { setImageMeta } from './image-meta.js';
 import { getRememberedPromptAt, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
@@ -761,7 +762,8 @@ export function mountImageView(container) {
     $root.find('.stng-img-reuse').on('click', () => {
         if (current) applyImageMeta(metaOf(current));
     });
-    $preview.on('click', () => current && window.open(toDataUrl(current), '_blank')?.focus());
+    // 누르면 패널 안에서 크게(새 탭은 data: 주소가 막혀 빈 화면이 뜬다)
+    $preview.on('click', () => current && openLightbox(toDataUrl(current), $preview[0]));
 
     // --- 남은 이미지 수 / 잔액
     function renderQuota() {

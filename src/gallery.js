@@ -2,6 +2,7 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
+import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { filterByChat, getImageMeta, removeImageMeta } from './image-meta.js';
 import { canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
@@ -204,6 +205,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         await loadImages();
     });
     $viewer.find('.stng-gallery-back').on('click', closeViewer);
+    $viewerImg.on('click', () => openLightbox(String($viewerImg.attr('src')), $viewerImg[0]));
     $viewer.find('.stng-gallery-prev').on('click', () => step(-1));
     $viewer.find('.stng-gallery-next').on('click', () => step(1));
 
