@@ -81,6 +81,8 @@ export function mountGalleryView(container, { onUseMeta }) {
     let existingFolders = new Set();
     /** 격자에 그린 장 수(나눠서 그린다) */
     let rendered = 0;
+    /** 격자에 보여 줄 장 수(GALLERY_PAGE 씩 늘어난다). 지워서 빈 자리는 다음 그림으로 채운다 */
+    let shownTarget = 0;
     /** 여러 장 고르기 */
     let selecting = false;
     /** @type {Set<string>} 고른 파일 이름 */
@@ -149,14 +151,21 @@ export function mountGalleryView(container, { onUseMeta }) {
             : tr('gallery_empty', 'No images in this folder yet.'));
         $empty.prop('hidden', files.length > 0);
         rendered = 0;
+        shownTarget = 0;
         setSelecting(false);
         renderMore();
     }
 
-    /** 다음 몇 장을 격자에 더 그린다 */
+    /** [더 보기]: 다음 GALLERY_PAGE 장을 격자에 더 그린다 */
     function renderMore() {
+        shownTarget += GALLERY_PAGE;
+        fillGrid();
+    }
+
+    /** 보여 줄 장 수(shownTarget)까지 격자를 채운다 */
+    function fillGrid() {
         const folder = String($folder.val() || '');
-        const next = files.slice(rendered, rendered + GALLERY_PAGE);
+        const next = files.slice(rendered, Math.min(shownTarget, files.length));
         $grid.append(next.map(file => $('<button type="button" class="stng-gallery-thumb"></button>')
             .attr('title', file)
             .attr('data-file', file)
@@ -366,7 +375,8 @@ export function mountGalleryView(container, { onUseMeta }) {
             files.splice(index, 1);
             $grid.find('.stng-gallery-thumb').filter((_, el) => el.dataset.file === file).remove();
             if (index < rendered) rendered--;
-            renderMoreButton();
+            // 지운 자리는 아직 안 그린 다음 그림으로 채운다(안 그러면 30장보다 적은데 [더 보기]가 남는다)
+            fillGrid();
             $count.text(scope() === 'chat' ? tr('gallery_count_chat', '{0} images from this chat', files.length) : tr('gallery_count', '{0} images', files.length));
             $empty.prop('hidden', files.length > 0);
             // 지운 자리의 다음 이미지를 보여 주고, 다 지웠으면 목록으로
