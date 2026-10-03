@@ -694,8 +694,12 @@ export function mountImageView(container) {
     }
 
     /** 드롭다운과 접힌 [고급] 제목에 지금 칸과 같은 스타일 이름을 보여 준다 */
+    /** 마지막으로 고르거나 맞았던 스타일. 고친 뒤 💾 를 누르면 이 이름으로 바로 덮어쓰게 미리 채운다 */
+    let lastStyleName = '';
+
     function showStyle() {
         const name = matchingStyle();
+        if (name) lastStyleName = name;
         $style.val(name);
         $root.find('.stng-adv-style').text(name).prop('hidden', !name);
         fitAffixes();
@@ -731,11 +735,13 @@ export function mountImageView(container) {
     });
 
     $root.find('.stng-img-style-save').on('click', async () => {
-        const name = await askName(tr('style_name_prompt', 'Style name:'), String($style.val() || ''));
+        // 고른 스타일을 고친 뒤라면(드롭다운은 '저장 안 됨') 그 스타일 이름을 미리 채워 확인만 누르면 되게
+        const current = String($style.val() || '') || (getSdStyles()?.some(s => s.name === lastStyleName) ? lastStyleName : '');
+        const name = await askName(tr('style_name_prompt', 'Style name:'), current);
         if (!name) return;
         const existing = getSdStyles()?.find(s => s.name === name);
-        // 다른 내용의 같은 이름을 덮어쓸 때만 묻는다
-        if (existing && name !== $style.val()) {
+        // 지금 고치던 스타일이 아닌, 다른 스타일을 덮어쓸 때만 한 번 더 묻는다
+        if (existing && name !== current) {
             const ok = await callGenericPopup(tr('style_overwrite', 'Overwrite the style "{0}" with the current values?', name), POPUP_TYPE.CONFIRM);
             if (ok !== POPUP_RESULT.AFFIRMATIVE) return;
         }
@@ -751,6 +757,7 @@ export function mountImageView(container) {
         if (!name || name === oldName) return;
         if (getSdStyles()?.some(s => s.name === name)) return toastr.error(tr('style_exists', 'A style with that name already exists.'));
         renameSdStyle(oldName, name);
+        if (lastStyleName === oldName) lastStyleName = name;
         fillStyles();
     });
 
@@ -761,6 +768,7 @@ export function mountImageView(container) {
         if (ok !== POPUP_RESULT.AFFIRMATIVE) return;
         // 지워도 두 칸의 내용은 그대로 둔다(지금 쓰는 값이 사라지지 않게)
         deleteSdStyle(name);
+        if (lastStyleName === name) lastStyleName = '';
         fillStyles();
     });
 
