@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
+import { ATTACH_MODES, BADGE_ITEMS, BADGE_POSITIONS, BADGE_UNITS, DEFAULT_SCENE_PROMPT, DEFAULT_SETTINGS, LEGACY_SCENE_PROMPT_V1, LEGACY_SCENE_PROMPT_V2, LEGACY_SCENE_PROMPT_V4, MODULE_NAME, RECORD_LIMITS, REFRESH_INTERVALS, SETTINGS_FILE } from './constants.js';
 import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 
 /*
@@ -113,6 +113,12 @@ function migrate(target) {
     if (target.version < 4) {
         if (target.scenePrompt === LEGACY_SCENE_PROMPT_V2) target.scenePrompt = DEFAULT_SCENE_PROMPT;
         target.version = 4;
+        target.__changed = true;
+    }
+    // v4 → v5: 장소를 인물 앞으로(이미지 모델은 앞 단어를 세게 따른다. 장소가 끝에 있으면 화풍의 기본 배경에 밀렸다)
+    if (target.version < 5) {
+        if (target.scenePrompt === LEGACY_SCENE_PROMPT_V4) target.scenePrompt = DEFAULT_SCENE_PROMPT;
+        target.version = 5;
         target.__changed = true;
     }
 }

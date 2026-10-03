@@ -41,6 +41,26 @@ export const SIZE_PRESETS = Object.freeze([
 export const DEFAULT_SCENE_PROMPT = [
     'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
     '',
+    'Order (the image generator follows the first words most strongly):',
+    '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
+    '2. The number of people, e.g. "two people, 1man 1woman" or "1girl, solo".',
+    '3. The place in only 2-4 keywords: "indoors" or "outdoors" first, then the location (e.g. "indoors, bedroom").',
+    '4. EVERY person present in the moment, including the user\'s persona if they are there: their appearance (hair, eyes, body), clothing, ONE simple pose and facial expression for each.',
+    '5. Key objects around them, time of day, lighting and mood (e.g. "bed, blanket, bedside lamp, night, warm dim light, worried mood").',
+    '',
+    'Rules:',
+    '- Each person gets only one pose and at most one hand action. Do not describe hands unless essential.',
+    '- If two people touch, keep it simple (e.g. leaning on a shoulder, holding hands) and add no other arm actions.',
+    '- Do not include any art style, medium or quality words; describe only the content.',
+    '- Never include text, captions, speech bubbles, signs or timestamps.',
+    '',
+    'Output only the keyword list, nothing else.',
+].join('\n');
+
+/** v4 의 기본 지시문(장소가 맨 끝). 사용자가 고치지 않았으면 v5 에서 새 기본값으로 바꾼다 */
+export const LEGACY_SCENE_PROMPT_V4 = [
+    'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords.',
+    '',
     'Order:',
     '1. ONE camera keyword that fits the moment and the [Image style] if one is given, such as: close-up, medium shot, wide shot, over-the-shoulder view, first-person POV, low angle, high angle, from far away.',
     '2. The number of people, e.g. "two people, 1man 1woman" or "1girl, solo".',
@@ -71,7 +91,7 @@ export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
 /** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
 export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
 
-export const SETTINGS_VERSION = 4;
+export const SETTINGS_VERSION = 5;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
