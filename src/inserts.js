@@ -70,7 +70,8 @@ export async function addInsert(messageId, url) {
         if (!list.includes(url)) list.push(url);
         tempInserts.set(key, list);
     }
-    renderMessage(document.querySelector(`#chat .mes[mesid="${messageId}"]`));
+    // 방금 붙인 그림이 보이게
+    renderMessage(document.querySelector(`#chat .mes[mesid="${messageId}"]`), { showLast: true });
 }
 
 /**
@@ -97,33 +98,68 @@ async function removeInsert(message, url) {
 
 /**
  * 메시지 하나의 끼워 넣은 그림 칸을 다시 그린다. 본문(.mes_text) 바로 아래에 둬서
- * ST 가 본문을 다시 그려도(수정·스와이프) 그대로 남는다
+ * ST 가 본문을 다시 그려도(수정·스와이프) 그대로 남는다.
+ * 여러 장이어도 한 장씩 크게 보여 주고 ‹ 2 / 5 › 로 넘긴다(몇 장을 붙여도 메시지 아래 높이가 한 장으로 일정하게).
+ * 보고 있던 장은 요소에 기억해 두고, 새로 붙였을 때만 마지막(방금 붙인) 장으로 간다
  * @param {Element|null} element .mes 요소
+ * @param {{ showLast?: boolean }} [options]
  */
-function renderMessage(element) {
+function renderMessage(element, { showLast = false } = {}) {
     if (!(element instanceof HTMLElement)) return;
     const messageId = Number(element.getAttribute('mesid'));
     const message = getContext().chat?.[messageId];
     element.querySelector(':scope .stng-inserts')?.remove();
     if (!message) return;
     const images = imagesFor(message);
-    if (!images.length) return;
+    if (!images.length) {
+        delete element.dataset.stngInsertIndex;
+        return;
+    }
+
+    const saved = Number(element.dataset.stngInsertIndex);
+    let index = showLast || !Number.isInteger(saved) ? images.length - 1 : Math.min(saved, images.length - 1);
 
     const $box = $('<div class="stng-inserts"></div>');
-    for (const url of images) {
-        const $item = $('<div class="stng-insert"></div>');
-        const $img = $('<img alt="" loading="lazy">').attr('src', url);
-        $img.on('click', () => openLightbox(url, $img[0]));
-        const $remove = $('<button type="button" class="stng-insert-remove"></button>')
-            .attr('title', tr('insert_remove', 'Remove from this message (the image stays in the gallery)'))
-            .append('<i class="fa-solid fa-xmark"></i>');
-        $remove.on('click', async (event) => {
-            event.stopPropagation();
-            await removeInsert(message, url);
-            renderMessage(element);
-        });
-        $box.append($item.append($img, $remove));
-    }
+    const $item = $('<div class="stng-insert"></div>');
+    const $img = $('<img alt="" loading="lazy">');
+    const $remove = $('<button type="button" class="stng-insert-remove"></button>')
+        .attr('title', tr('insert_remove', 'Remove from this message (the image stays in the gallery)'))
+        .append('<i class="fa-solid fa-xmark"></i>');
+    const $nav = $('<div class="stng-insert-nav"></div>');
+    const $prev = $('<button type="button" class="stng-insert-prev"></button>').attr('title', tr('previous', 'Previous')).append('<i class="fa-solid fa-chevron-left"></i>');
+    const $count = $('<span class="stng-insert-count"></span>');
+    const $next = $('<button type="button" class="stng-insert-next"></button>').attr('title', tr('next', 'Next')).append('<i class="fa-solid fa-chevron-right"></i>');
+
+    const show = (/** @type {number} */ i) => {
+        index = (i + images.length) % images.length;
+        element.dataset.stngInsertIndex = String(index);
+        $img.attr('src', images[index]);
+        $count.text(`${index + 1} / ${images.length}`);
+    };
+    $img.on('click', () => openLightbox(images[index], $img[0]));
+    $prev.on('click', () => show(index - 1));
+    $next.on('click', () => show(index + 1));
+    // 좌우로 밀어서 넘기기(휴대폰)
+    let touchX = null;
+    $img.on('touchstart', (e) => { touchX = e.originalEvent.touches[0].clientX; });
+    $img.on('touchend', (e) => {
+        if (touchX === null || images.length < 2) return;
+        const dx = e.originalEvent.changedTouches[0].clientX - touchX;
+        touchX = null;
+        if (Math.abs(dx) > 50) show(index + (dx < 0 ? 1 : -1));
+    });
+    // ✕ 는 지금 보이는 장만 뺀다
+    $remove.on('click', async (event) => {
+        event.stopPropagation();
+        await removeInsert(message, images[index]);
+        renderMessage(element);
+    });
+
+    $item.append($img, $remove);
+    $box.append($item);
+    if (images.length > 1) $box.append($nav.append($prev, $count, $next));
+    show(index);
+
     const text = element.querySelector('.mes_text');
     if (text) $(text).after($box);
     else $(element).find('.mes_block').append($box);

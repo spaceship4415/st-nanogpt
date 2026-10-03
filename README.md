@@ -31,15 +31,45 @@ It only uses the NanoGPT endpoints already in SillyTavern. Your API key stays in
 
 In SillyTavern: **Extensions → Install extension**, then paste this repository's URL.
 
+## To chat options
+
+Choose how **To chat** attaches an image made from a message (settings → Image → Send to chat).
+
+| Option | Shown at that message | Affects the AI | Needs this extension to be visible |
+|---|---|---|---|
+| **Show under the message** (default) | ✅ | No | ✅ (hidden if the extension is off) |
+| **Attach to the message** | ✅ | Models that read images will see it | ❌ (visible without it) |
+| **Hidden message at the end** | ❌ (at the end) | No \* | ❌ (visible without it) |
+
+- \* Only while "Hide image messages at the end from the AI" is on (default). If it is off, it becomes a normal message: the prompt text is sent to the AI, and models that read images also see the picture.
+- Either way, the image belongs to the swipe it was made from.
+- Adding more images to the same message adds rather than replaces. **Show under the message** shows one image at a time; flip with ‹ 2 / 5 › or a swipe (the newest first). ✕ removes only the one shown.
+- Images made from a prompt you typed, or when the message was edited or swiped in the meantime, always go to the end as a hidden message.
+- The same applies when sending from the gallery (when the source message was recorded).
+
+### Removing images from the chat
+
+Removing from the chat and deleting the image file are separate.
+
+| Option | Remove from the chat | Delete the file too |
+|---|---|---|
+| **Show under the message** | **✕** at the top right of the image (only the one shown) | **Delete** in the Gallery tab — also removes it from every message showing it |
+| **Attach to the message** | Tap the image (hover on PC) → **🗑** → "Delete one" or "Delete all" | The **delete files from the server** checkbox in that dialog (on by default in SillyTavern). Untick it to keep the file |
+| **Hidden message at the end** | Delete the message as usual (… menu or edit → 🗑), or the image's **🗑** | **Delete** in the Gallery tab |
+
+- ✕ only removes it from the message; the file stays in the gallery.
+- If SillyTavern's 🗑 deletes the file, this extension's generation info for it simply goes unused. If the same image is also shown under a message, it will show as broken there, so remove it with ✕.
+
+
 ## Notes
 
 - Choose how many image info records and written prompts to keep under **Records** in the settings (off to 5,000). Lowering it asks before deleting the oldest.
 
-- Settings are saved in their own file, `data/<user>/user/files/st-nanogpt-settings.json`, not in SillyTavern's `settings.json`. Deleting the extension deletes this file, the image info file (`st-nanogpt-images.json`) the written prompts file (`st-nanogpt-prompts.json`) and the under-message images file (`st-nanogpt-inserts.json`) too. Gallery images themselves are kept, since chats may use them.
+- Settings are saved in their own file, `data/<user>/user/files/st-nanogpt-settings.json`, not in SillyTavern's `settings.json`. Deleting the extension deletes this file, the image info file (`st-nanogpt-images.json`), the written prompts file (`st-nanogpt-prompts.json`) and the under-message images file (`st-nanogpt-inserts.json`) too. Gallery images themselves are kept, since chats may use them.
 
 - **Stop** cancels the wait in SillyTavern, but NanoGPT may still finish the image and charge for it.
 - Generated images are saved to the server gallery (`data/<user>/user/images/<character name>/`) right away by default. Turn this off to save them only when sent to the chat.
-- Choose how **To chat** works for images made from a message: **Show under the message** (default, never sent to the AI, visible only while this extension is on), **Attach to the message** (visible without the extension, but models that read images will see it), or **Hidden message at the end**. Either way the image belongs to the swipe it was made from.
+- For **To chat**, see [To chat options](#to-chat-options) above.
 - Images sent to the end of the chat are hidden messages by default, so their prompt is not sent to the model. Change this under **Extensions → NanoGPT Tools**.
 - Some image models ignore steps, CFG scale and the negative prompt.
 

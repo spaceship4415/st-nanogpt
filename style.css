@@ -1165,12 +1165,48 @@ body.stng-no-mes-button .stng_mes_scene {
     }
 }
 
-/* 메시지 아래에 화면에만 끼워 넣은 그림 */
+/* 메시지 아래에 화면에만 끼워 넣은 그림: 한 장씩 보이고 여러 장이면 아래에서 넘긴다 */
 .stng-inserts {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin-top: 8px;
+}
+
+.stng-insert-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+}
+
+.stng-insert-nav button {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    color: inherit;
+    background-color: var(--black30a);
+    cursor: pointer;
+}
+
+/* 보이는 크기는 작게, 누르는 영역은 44px */
+.stng-insert-nav button {
+    position: relative;
+}
+
+.stng-insert-nav button::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+}
+
+.stng-insert-count {
+    min-width: 3.5em;
+    text-align: center;
+    opacity: 0.8;
 }
 
 .stng-insert {
