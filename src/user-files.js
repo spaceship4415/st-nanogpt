@@ -35,11 +35,13 @@ export async function readUserFile(name) {
  */
 export async function writeUserFile(name, data, keepalive = false) {
     try {
+        const body = JSON.stringify({ name, data: toBase64(JSON.stringify(data, null, 4)) });
         const response = await fetch('/api/files/upload', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ name, data: toBase64(JSON.stringify(data, null, 4)) }),
-            keepalive,
+            body,
+            // 브라우저는 keepalive 요청의 본문을 64KB 까지만 보내 준다. 넘으면 일반 요청으로(닫히기 전에 끝나길 바라며)
+            keepalive: keepalive && body.length < 60000,
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return true;

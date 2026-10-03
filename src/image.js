@@ -27,6 +27,7 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {number} createdAt
  * @property {string|null} [chatId] 만든 채팅(갤러리의 '이 채팅만' 보기용). 임시 채팅이면 없음
  * @property {{ chatId: string, messageId: number, fingerprint: string }|null} [source] 프롬프트를 쓴 메시지(채팅에 보낼 때 그 메시지에 붙인다)
+ * @property {string} [folder] 저장할 갤러리 폴더(생성을 시작한 때의 채팅 기준)
  * @property {string|null} savedUrl 채팅에 보내려고 서버에 저장한 경로(같은 이미지를 두 번 올리지 않게)
  */
 
@@ -70,6 +71,9 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
     const negative = negativePrompt ?? settings.negativePrompt;
     const steps = Number(settings.steps) || 30;
     const scale = Number(settings.scale) || 7.5;
+    // 기다리는 사이 채팅을 옮겨도(명령어로 만들 때) 시작한 채팅의 폴더·기록으로 남게 미리 잡아 둔다
+    const chatId = getContext().getCurrentChatId?.() || null;
+    const folder = galleryFolder();
     try {
         const base64 = await generateImage({
             model: finalModel,
@@ -82,7 +86,7 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
         }, signal);
 
         /** @type {GeneratedImage} */
-        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId: getContext().getCurrentChatId?.() || null, source, savedUrl: null };
+        const entry = { base64, prompt: prompt.trim(), promptPrefix: settings.promptPrefix, negativePrompt: negative, model: finalModel, width, height, steps, scale, createdAt: Date.now(), chatId, folder, source, savedUrl: null };
         sessionImages.unshift(entry);
         sessionImages.length = Math.min(sessionImages.length, MAX_SESSION_IMAGES);
         if (settings.autoSaveGallery) {
@@ -115,7 +119,7 @@ export function canSendToChat() {
  */
 export async function saveToGallery(entry) {
     if (!entry.savedUrl) {
-        const folder = galleryFolder();
+        const folder = entry.folder || galleryFolder();
         entry.savedUrl = await saveBase64AsFile(entry.base64, folder, `${folder}_${humanizedDateTime()}`, 'jpg');
         // 갤러리에서 설정을 다시 볼 수 있게 생성 정보를 남긴다
         if (entry.model) setImageMeta(entry.savedUrl, metaOf(entry));
@@ -798,6 +802,12 @@ export function mountImageView(container) {
         useSceneMessage(messageId, run) {
             if (sceneBusy) return;
             setAutoOpen(true);
+            // 숨김·빈 메시지는 그릴 대상이 아니다(조용히 '최신 메시지'로 바뀌어 작성되지 않게 알리고 멈춘다)
+            if (messageId !== CHARACTER_SCENE && !getScenePreview(messageId)) {
+                fillSceneMessages();
+                toastr.warning(tr('scene_hidden_message', 'Hidden messages cannot be drawn.'));
+                return;
+            }
             fillSceneMessages(messageId);
             if (!run || $scene.prop('disabled')) return;
             // 같은 메시지로 전에 쓴 프롬프트가 있으면 다시 쓰지 않고 불러온다(토큰 절약). 새로 쓰려면 [새로 작성]

@@ -146,9 +146,11 @@ export function installInserts() {
         }
     }).observe(chat, { childList: true });
     // 스와이프는 같은 요소를 다시 쓰므로 따로(넘긴 스와이프의 그림으로 바꿔 보여 준다)
-    eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
-        renderMessage(document.querySelector(`#chat .mes[mesid="${messageId}"]`));
-    });
+    // 수정·다시 생성처럼 같은 요소를 다시 쓰는 경우도(보낸 시각이 바뀌면 그 스와이프의 그림으로)
+    const rerender = (/** @type {any} */ messageId) => renderMessage(document.querySelector(`#chat .mes[mesid="${messageId}"]`));
+    for (const type of [event_types.MESSAGE_SWIPED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_EDITED, event_types.CHARACTER_MESSAGE_RENDERED, event_types.USER_MESSAGE_RENDERED]) {
+        eventSource.on(type, rerender);
+    }
     store.preload().then(renderAll).catch(error => console.warn(LOG_PREFIX, 'could not load inserts', error));
 }
 

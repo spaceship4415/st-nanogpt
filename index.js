@@ -1,5 +1,5 @@
 import { eventSource, event_types } from '../../../../script.js';
-import { renderExtensionTemplateAsync } from '../../../extensions.js';
+import { getContext, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -240,6 +240,7 @@ function registerSlashCommands() {
         callback: async (args, prompt) => {
             try {
                 const size = /^\d+x\d+$/.test(String(args.size ?? '')) ? String(args.size) : undefined;
+                const startedIn = getContext().getCurrentChatId?.() || '';
                 const entry = await createImage({
                     prompt: String(prompt ?? ''),
                     model: args.model ? String(args.model) : undefined,
@@ -249,6 +250,11 @@ function registerSlashCommands() {
                 if (args.send === 'false') {
                     openPanel('image');
                     return '';
+                }
+                // 기다리는 사이 다른 채팅으로 옮겼으면 그 채팅에 넣지 않는다(그림은 갤러리에 있음)
+                if ((getContext().getCurrentChatId?.() || '') !== startedIn) {
+                    toastr.warning(tr('chat_changed', 'The chat changed while the image was being made, so it was not added. It is in the gallery.'));
+                    return entry.savedUrl ?? '';
                 }
                 return await sendImageToChat(entry);
             } catch (error) {

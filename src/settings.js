@@ -118,6 +118,8 @@ export function getSettings() {
  * @param {any} value
  */
 export function setSetting(key, value) {
+    // 값이 그대로면 파일을 다시 쓰지 않는다(패널을 열 때마다 같은 값을 넣는 곳들이 있다)
+    if (Object.is(settings[key], value)) return;
     settings[key] = value;
     if (!writable) return;
     if (saveTimer) clearTimeout(saveTimer);

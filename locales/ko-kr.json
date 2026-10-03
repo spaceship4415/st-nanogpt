@@ -183,5 +183,8 @@
     "nanogpt_tools.attach_message_hint": "사진 첨부처럼 메시지에 붙입니다(그 스와이프에서만). 확장 없이도 보이지만, 이미지를 읽는 모델은 그림을 봅니다.",
     "nanogpt_tools.attach_hidden_hint": "채팅 맨 아래에 숨김 메시지로 추가합니다. AI에게는 안 갑니다.",
     "nanogpt_tools.insert_remove": "이 메시지에서 빼기(그림은 갤러리에 남음)",
-    "nanogpt_tools.no_message": "그 메시지가 더 이상 없습니다."
+    "nanogpt_tools.no_message": "그 메시지가 더 이상 없습니다.",
+    "nanogpt_tools.chat_changed": "이미지를 만드는 사이 채팅이 바뀌어 채팅에 넣지 않았습니다. 갤러리에 있습니다.",
+    "nanogpt_tools.scene_hidden_message": "숨김 메시지는 그릴 수 없습니다.",
+    "nanogpt_tools.scene_profile_failed": "연결 프로필 요청이 실패했습니다: {0}"
 }

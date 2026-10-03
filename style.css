@@ -1205,3 +1205,8 @@ body.stng-no-mes-button .stng_mes_scene {
     position: absolute;
     inset: -8px;
 }
+
+/* 숨김(시스템) 메시지에는 ⚡ 버튼을 두지 않는다(그릴 대상이 아니다) */
+.mes[is_system="true"] .stng_mes_scene {
+    display: none !important;
+}

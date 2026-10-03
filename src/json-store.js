@@ -3,6 +3,8 @@ import { deleteUserFile, readUserFile, writeUserFile } from './user-files.js';
 /*
  * 사용자 파일 폴더의 JSON 파일 하나를 { 키: 값 } 기록장으로 쓴다(이미지 생성 정보, 써 둔 프롬프트).
  * 처음 쓸 때 한 번 읽고, 바뀌면 잠깐 모았다가 저장한다. 값마다 createdAt 을 두면 넘칠 때 오래된 것부터 지운다.
+ * 저장할 때는 파일을 다시 읽어 이쪽에서 바꾼·지운 키만 반영한다 — 휴대폰과 PC 처럼 여러 곳에서 같은 ST 를
+ * 쓰면, 통째로 덮어쓸 경우 그사이 다른 곳이 추가한 기록이 사라지기 때문이다.
  */
 
 /**
@@ -18,6 +20,9 @@ export function createJsonStore(fileName, getLimit) {
     let writable = false;
     /** @type {ReturnType<typeof setTimeout>|null} */
     let saveTimer = null;
+    /** 마지막 저장 뒤 이쪽에서 바꾼 키와 지운 키 */
+    const changed = new Set();
+    const removed = new Set();
 
     function load() {
         if (records) return Promise.resolve(records);
@@ -49,8 +54,39 @@ export function createJsonStore(fileName, getLimit) {
         if (keys.length <= limit) return false;
         keys.sort((a, b) => (all[a].createdAt || 0) - (all[b].createdAt || 0))
             .slice(0, keys.length - Math.max(0, limit))
-            .forEach(old => delete all[old]);
+            .forEach(old => {
+                delete all[old];
+                removed.add(old);
+                changed.delete(old);
+            });
         return true;
+    }
+
+    /** 파일을 다시 읽어 이쪽 변경만 얹고 저장한다(다른 기기에서 추가한 기록을 지키려고) */
+    async function flush() {
+        if (!changed.size && !removed.size) return;
+        /** @type {Record<string, any>|null} */
+        let remote = null;
+        try {
+            remote = await readUserFile(fileName);
+        } catch (error) {
+            // 다시 읽지 못하면 이쪽 내용 그대로 저장한다
+            console.warn(`[NanoGPT] could not re-read ${fileName} before saving`, error);
+        }
+        // 여기부터 쓰기 요청 전까지는 끊기지 않으므로, 읽는 사이에 생긴 변경까지 함께 얹는다
+        let merged = records ?? {};
+        if (remote && typeof remote === 'object') {
+            merged = { ...remote };
+            for (const key of changed) if (records && key in records) merged[key] = records[key];
+            for (const key of removed) delete merged[key];
+        }
+        changed.clear();
+        removed.clear();
+        trimTo(merged, getLimit());
+        changed.clear();
+        removed.clear();
+        records = merged;
+        await writeUserFile(fileName, records);
     }
 
     function scheduleSave() {
@@ -58,7 +94,7 @@ export function createJsonStore(fileName, getLimit) {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             saveTimer = null;
-            writeUserFile(fileName, records);
+            flush();
         }, 300);
     }
 
@@ -87,6 +123,8 @@ export function createJsonStore(fileName, getLimit) {
             if (getLimit() <= 0) return;
             const all = await load();
             all[key] = value;
+            changed.add(key);
+            removed.delete(key);
             trimTo(all, getLimit());
             scheduleSave();
         },
@@ -108,6 +146,8 @@ export function createJsonStore(fileName, getLimit) {
             const all = await load();
             if (key in all) {
                 delete all[key];
+                removed.add(key);
+                changed.delete(key);
                 scheduleSave();
             }
         },

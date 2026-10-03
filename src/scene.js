@@ -194,11 +194,17 @@ export async function promptFromScene(messageId, signal) {
     let result;
     if (profileId) {
         // 프로필의 샘플러 프리셋은 쓰지 않는다(긴 응답 길이 등이 섞이지 않게). 텍스트 완성이면 instruct 로 감싼다
-        const data = await ConnectionManagerRequestService.sendRequest(profileId, [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: prompt },
-        ], SCENE_RESPONSE_LENGTH, { signal, includePreset: false });
-        result = /** @type {any} */ (data)?.content;
+        try {
+            const data = await ConnectionManagerRequestService.sendRequest(profileId, [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: prompt },
+            ], SCENE_RESPONSE_LENGTH, { signal, includePreset: false });
+            result = /** @type {any} */ (data)?.content;
+        } catch (error) {
+            // 연결 관리자는 'API request failed' 로 감싸 던지므로 원래 이유를 꺼내 보여 준다
+            const reason = error?.cause?.message || error?.message || String(error);
+            throw new Error(tr('scene_profile_failed', 'The connection profile request failed: {0}', reason));
+        }
     } else {
         result = await generateRaw({ prompt, systemPrompt, responseLength: SCENE_RESPONSE_LENGTH });
     }
