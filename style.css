@@ -53,8 +53,77 @@
 
 .stng-btn.stng-primary {
     width: 100%;
+    min-height: 50px;
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 55%, transparent);
+    border-radius: 12px;
+    font-size: 1.05em;
     font-weight: bold;
-    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 30%, var(--SmartThemeBlurTintColor));
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 32%, var(--SmartThemeBlurTintColor));
+    box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--SmartThemeQuoteColor) 45%, transparent);
+    transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.stng-btn.stng-primary:hover {
+    filter: brightness(1.12);
+}
+
+.stng-btn.stng-primary:active {
+    transform: scale(0.99);
+}
+
+/* 덜 중요한 동작: 테두리·배경 없이 글자만 */
+.stng-panel .stng-btn.stng-btn-quiet.menu_button {
+    border-color: transparent;
+    background-color: transparent;
+    opacity: 0.75;
+}
+
+.stng-panel .stng-btn.stng-btn-quiet.menu_button:hover {
+    opacity: 1;
+    background-color: var(--black30a);
+}
+
+/* ⓘ 안내 펼치기: 보이는 크기는 작게, 누르는 영역은 넉넉히 */
+.stng-info {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: inherit;
+    font-size: 0.95em;
+    background: transparent;
+    opacity: 0.45;
+    cursor: pointer;
+}
+
+.stng-info::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+.stng-info:hover,
+.stng-info.stng-open {
+    opacity: 1;
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stng-help {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    line-height: 1.45;
+    background-color: var(--black30a);
+    opacity: 0.85;
 }
 
 .stng-btn.stng-primary.stng-busy {
@@ -89,8 +158,10 @@
 }
 
 .stng-field-label {
-    font-size: 0.9em;
-    opacity: 0.8;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    opacity: 0.75;
 }
 
 .stng-field .text_pole {
@@ -412,19 +483,85 @@ body.stng-no-mes-button .stng_mes_scene {
     gap: 10px;
     padding: 0 12px;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 10px;
+    border-radius: 12px;
+    background-color: color-mix(in srgb, var(--black30a) 50%, transparent);
 }
 
 .stng-advanced[open] {
-    padding-bottom: 12px;
+    padding-bottom: 10px;
 }
 
 .stng-advanced > summary {
     display: flex;
     align-items: center;
-    min-height: 44px;
+    gap: 8px;
+    min-height: 46px;
+    font-weight: 600;
     cursor: pointer;
-    opacity: 0.8;
+}
+
+.stng-advanced > summary > i {
+    color: var(--SmartThemeQuoteColor);
+    opacity: 0.9;
+}
+
+/* 접혀 있어도 보이는 지금 스타일 이름 */
+.stng-adv-style {
+    min-width: 0;
+    overflow: hidden;
+    padding: 2px 10px;
+    border: 1px solid color-mix(in srgb, var(--SmartThemeQuoteColor) 45%, transparent);
+    border-radius: 999px;
+    font-size: 0.8em;
+    font-weight: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 14%, transparent);
+}
+
+/* 고급 안의 묶음: 소제목 + 내용, 묶음 사이에 옅은 선 */
+.stng-adv-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 60%, transparent);
+}
+
+.stng-adv-section .stng-field + .stng-field {
+    margin-top: 4px;
+}
+
+.stng-adv-title {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 28px;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.stng-adv-title > span:first-child {
+    opacity: 0.75;
+}
+
+.stng-adv-title-tools {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+    font-weight: normal;
+}
+
+.stng-adv-title-tools .stng-btn.stng-btn-small {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.95em;
+}
+
+.stng-advanced > .stng-img-import.menu_button {
+    align-self: center;
+    margin-top: 2px;
 }
 
 .stng-advanced > summary::-webkit-details-marker {
@@ -448,6 +585,7 @@ body.stng-no-mes-button .stng_mes_scene {
 /* 기준 메시지 드롭다운 + [채팅으로 만들기]: 드롭다운이 남는 폭을 다 쓴다 */
 .stng-scene {
     display: flex;
+    align-items: center;
     gap: 6px;
 }
 
@@ -507,16 +645,6 @@ body.stng-no-mes-button .stng_mes_scene {
     opacity: 0.85;
 }
 
-.stng-advanced > .stng-img-import.menu_button {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.stng-advanced > .stng-field,
-.stng-advanced > .stng-row {
-    margin-bottom: 10px;
-}
-
 .stng-img-quota {
     text-align: center;
 }
@@ -550,55 +678,77 @@ body.stng-no-mes-button .stng_mes_scene {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 14px;
+    background-color: var(--black30a);
+    /* 결과로 올려 줄 때 탭 줄에 붙지 않게 */
+    scroll-margin-top: 8px;
 }
 
 .stng-img-preview {
     display: block;
     width: 100%;
-    /* 키 작은 폰에서도 아래 정보·버튼 줄이 한 화면에 같이 보이게 */
-    max-height: min(70dvh, calc(100dvh - 290px));
+    /* 폼 위에 있으므로 아래 버튼 줄과 프롬프트 칸 일부가 한 화면에 같이 보이게 */
+    max-height: min(42dvh, calc(100dvh - 420px));
+    min-height: 160px;
     object-fit: contain;
-    border-radius: 12px;
+    border-radius: 10px;
     background-color: var(--black50a);
     cursor: zoom-in;
 }
 
 .stng-img-meta {
+    padding: 0 2px;
+    font-size: 0.8em;
     overflow-wrap: anywhere;
 }
 
-/* 휴대폰: 네 버튼을 한 줄에 나눠 담고, 글자가 길면 줄바꿈 */
+/* 휴대폰: 다섯 버튼을 한 줄에 나눠 담고, 글자가 길면 줄바꿈 */
 .stng-img-actions {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+}
+
+/* 가장 자주 누르는 [다시] 를 강조 */
+.stng-img-actions .stng-img-regen.menu_button {
+    color: var(--SmartThemeQuoteColor);
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 45%, var(--SmartThemeBorderColor));
 }
 
 /* 아이콘 위, 글자 아래로 쌓아 좁은 칸에서도 가로로 읽히게 */
 .stng-img-actions .stng-btn.menu_button {
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     width: 100%;
-    min-height: 52px;
-    padding: 6px 4px;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    border-radius: 10px;
     white-space: normal;
     word-break: keep-all;
     text-align: center;
-    font-size: 0.85em;
+    font-size: 0.8em;
     line-height: 1.2;
+}
+
+.stng-img-actions .stng-btn.menu_button i {
+    font-size: 1.15em;
 }
 
 .stng-img-strip {
     display: flex;
     gap: 6px;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
     overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .stng-thumb {
     flex: 0 0 auto;
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
     padding: 0;
     overflow: hidden;
     border: 2px solid transparent;
@@ -609,6 +759,10 @@ body.stng-no-mes-button .stng_mes_scene {
 
 .stng-thumb.stng-selected {
     border-color: var(--SmartThemeQuoteColor);
+}
+
+.stng-thumb:not(.stng-selected) img {
+    opacity: 0.7;
 }
 
 .stng-thumb img {
@@ -924,10 +1078,14 @@ body.stng-no-mes-button .stng_mes_scene {
 @media (min-width: 768px) {
     .stng-img-actions .stng-btn.menu_button {
         flex-direction: row;
-        gap: 8px;
+        gap: 6px;
         min-height: 44px;
         white-space: nowrap;
-        font-size: 0.9em;
+        font-size: 0.88em;
+    }
+
+    .stng-img-actions .stng-btn.menu_button i {
+        font-size: 1em;
     }
 }
 
@@ -1133,8 +1291,8 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-auto-box {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 8px;
+    padding: 10px;
     border-left: 3px solid var(--SmartThemeQuoteColor);
     border-radius: 6px;
     background-color: var(--black30a);

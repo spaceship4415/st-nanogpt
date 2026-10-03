@@ -115,6 +115,41 @@
             <span data-i18n="nanogpt_tools.no_key">No NanoGPT API key. Save one in the API Connections panel (Chat Completion → NanoGPT).</span>
         </div>
 
+        <!-- 최근 결과: 폼 위에 두어 뽑고 → 보고 → 다시 뽑기가 스크롤 없이 된다 -->
+        <div class="stng-img-result" hidden>
+            <!-- 생성 중: 고른 크기 비율의 자리 + 지난 시간 -->
+            <div class="stng-img-pending" hidden>
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span></span>
+            </div>
+            <img class="stng-img-preview" alt="" />
+            <div class="stng-img-strip"></div>
+            <small class="stng-muted stng-img-meta"></small>
+            <div class="stng-img-actions">
+                <button type="button" class="menu_button stng-btn stng-img-regen">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span data-i18n="nanogpt_tools.regenerate_short">Again</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <!-- 글자는 image.js 가 넣는다(원래 메시지에 붙이면 '#12에 붙이기') --><span></span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-download">
+                    <i class="fa-solid fa-download"></i>
+                    <span data-i18n="nanogpt_tools.download">Save</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-reuse">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span data-i18n="nanogpt_tools.load_settings_short">Load</span>
+                </button>
+                <button type="button" class="menu_button stng-btn stng-img-delete">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span data-i18n="nanogpt_tools.delete">Delete</span>
+                </button>
+            </div>
+            <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
+        </div>
+
         <div class="stng-img-form">
             <label class="stng-field stng-field-model">
                 <span class="stng-field-label" data-i18n="nanogpt_tools.model">Model</span>
@@ -145,15 +180,19 @@
                         <i class="fa-solid fa-chevron-down stng-auto-chevron"></i>
                     </button>
                 </div>
-                <div class="stng-auto-box" hidden>
+                <div class="stng-auto-box stng-help-scope" hidden>
                     <small class="stng-muted stng-scene-nochat" hidden data-i18n="nanogpt_tools.scene_no_chat">Open a chat to use this.</small>
-                    <small class="stng-muted" data-i18n="nanogpt_tools.scene_box_hint">Your chat AI reads a message and writes the prompt for you (uses chat tokens).</small>
                     <div class="stng-scene">
                         <select class="text_pole stng-img-scene-msg" title="Message to draw" data-i18n="[title]nanogpt_tools.scene_message"></select>
                         <button type="button" class="menu_button stng-btn stng-img-scene">
                             <i class="fa-solid fa-feather"></i>
                             <!-- 글자는 image.js 가 넣는다(작성 중 표시를 팝업 번역이 덮어쓰지 않게) --><span></span>
                         </button>
+                        <button type="button" class="stng-info" aria-expanded="false" title="Help" data-i18n="[title]nanogpt_tools.help"><i class="fa-solid fa-circle-info"></i></button>
+                    </div>
+                    <div class="stng-help" hidden>
+                        <span data-i18n="nanogpt_tools.scene_box_hint">Your chat AI reads a message and writes the prompt for you (uses chat tokens).</span>
+                        <span class="stng-scene-hint" hidden data-i18n="nanogpt_tools.scene_older_hint">For older messages, tap ⚡ in that message's … menu.</span>
                     </div>
                     <div class="stng-scene-preview" hidden>
                         <div class="stng-scene-preview-name"></div>
@@ -167,7 +206,6 @@
                             <span data-i18n="nanogpt_tools.scene_load">Load</span>
                         </button>
                     </div>
-                    <small class="stng-muted stng-scene-hint" hidden data-i18n="nanogpt_tools.scene_older_hint">For older messages, tap ⚡ in that message's … menu.</small>
                 </div>
                 <div class="stng-prompt-wrap">
                     <textarea class="text_pole stng-img-prompt" rows="4" placeholder="a cozy cabin in the snow at night, warm light, ..." ></textarea>
@@ -179,14 +217,31 @@
             </div>
 
             <details class="stng-advanced">
-                <summary data-i18n="nanogpt_tools.advanced">Advanced</summary>
-                <button type="button" class="menu_button stng-btn stng-img-import">
-                    <i class="fa-solid fa-file-import"></i>
-                    <span data-i18n="nanogpt_tools.sd_import">Import from Image Generation</span>
-                </button>
-                <!-- ST 이미지 생성 확장과 같은 스타일 목록. 그 확장이 없으면 image.js 가 숨긴다 -->
-                <div class="stng-field stng-img-style-field">
-                    <span class="stng-field-label" data-i18n="nanogpt_tools.style">Style</span>
+                <summary>
+                    <i class="fa-solid fa-sliders"></i>
+                    <span data-i18n="nanogpt_tools.advanced">Advanced</span>
+                    <!-- 접혀 있어도 지금 쓰는 스타일이 보이게. 글자는 image.js 가 넣는다 -->
+                    <span class="stng-adv-style" hidden></span>
+                </summary>
+
+                <!-- 스타일: ST 이미지 생성 확장과 같은 목록. 그 확장이 없으면 image.js 가 숨긴다 -->
+                <div class="stng-adv-section stng-img-style-field stng-help-scope">
+                    <div class="stng-adv-title">
+                        <span data-i18n="nanogpt_tools.style">Style</span>
+                        <button type="button" class="stng-info" aria-expanded="false" title="Help" data-i18n="[title]nanogpt_tools.help"><i class="fa-solid fa-circle-info"></i></button>
+                        <span class="stng-adv-title-tools">
+                            <button type="button" class="menu_button stng-btn stng-btn-small stng-btn-quiet stng-img-style-export" title="Export styles" data-i18n="[title]nanogpt_tools.style_export_title">
+                                <i class="fa-solid fa-file-export"></i>
+                                <span data-i18n="nanogpt_tools.style_export">Export</span>
+                            </button>
+                            <button type="button" class="menu_button stng-btn stng-btn-small stng-btn-quiet stng-img-style-import" title="Import styles" data-i18n="[title]nanogpt_tools.style_import_title">
+                                <i class="fa-solid fa-file-import"></i>
+                                <span data-i18n="nanogpt_tools.style_import">Import</span>
+                            </button>
+                            <input type="file" class="stng-img-style-file" accept=".json,application/json" hidden />
+                        </span>
+                    </div>
+                    <small class="stng-help" hidden data-i18n="nanogpt_tools.style_hint">Saves the common prompt prefix and negative prompt together. Shared with the Image Generation extension's style list.</small>
                     <span class="stng-row">
                         <select class="text_pole stng-img-style"></select>
                         <button type="button" class="menu_button stng-btn stng-icon-btn stng-img-style-save" title="Save style" data-i18n="[title]nanogpt_tools.style_save">
@@ -199,84 +254,63 @@
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </span>
-                    <span class="stng-row">
-                        <button type="button" class="menu_button stng-btn stng-btn-small stng-img-style-export">
-                            <i class="fa-solid fa-file-export"></i>
-                            <span data-i18n="nanogpt_tools.style_export">Export</span>
-                        </button>
-                        <button type="button" class="menu_button stng-btn stng-btn-small stng-img-style-import">
-                            <i class="fa-solid fa-file-import"></i>
-                            <span data-i18n="nanogpt_tools.style_import">Import</span>
-                        </button>
-                        <input type="file" class="stng-img-style-file" accept=".json,application/json" hidden />
-                    </span>
-                    <small class="stng-muted" data-i18n="nanogpt_tools.style_hint">Saves the common prompt prefix and negative prompt together. Shared with the Image Generation extension's style list.</small>
                 </div>
-                <label class="stng-field">
-                    <span class="stng-field-label" data-i18n="nanogpt_tools.prefix">Common prompt prefix</span>
-                    <textarea class="text_pole stng-img-prefix" rows="4" placeholder="masterpiece, best quality, ..."></textarea>
-                    <small class="stng-muted" data-i18n="nanogpt_tools.prefix_hint">Added in front of every prompt, for style or quality tags.</small>
-                </label>
-                <label class="stng-field">
-                    <span class="stng-field-label" data-i18n="nanogpt_tools.negative">Negative common prompt prefix</span>
-                    <textarea class="text_pole stng-img-negative" rows="4"></textarea>
-                </label>
-                <div class="stng-row stng-gap">
-                    <label class="stng-field stng-grow">
-                        <span class="stng-field-label" data-i18n="nanogpt_tools.steps">Steps</span>
-                        <input type="number" class="text_pole stng-img-steps" min="1" max="150" step="1" inputmode="numeric" />
-                    </label>
-                    <label class="stng-field stng-grow">
-                        <span class="stng-field-label" data-i18n="nanogpt_tools.scale">CFG scale</span>
-                        <input type="number" class="text_pole stng-img-scale" min="0" max="30" step="0.5" inputmode="decimal" />
-                    </label>
-                </div>
-                <div class="stng-row stng-gap stng-img-recommend" hidden>
-                    <small class="stng-muted stng-grow stng-img-recommend-text"></small>
-                    <button type="button" class="menu_button stng-btn stng-img-recommend-apply" data-i18n="nanogpt_tools.recommended_apply">Use recommended</button>
-                </div>
-                <small class="stng-muted" data-i18n="nanogpt_tools.advanced_hint">Values you change here are saved and used next time. Some models ignore steps, CFG scale and the negative prompt.</small>
-            </details>
 
-            <!-- 스크롤해도 화면 아래에 붙어 있는 생성 버튼 -->
-            <div class="stng-img-footer">
-                <div class="stng-img-status" hidden></div>
-                <button type="button" class="menu_button stng-btn stng-primary stng-img-generate">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span data-i18n="nanogpt_tools.generate">Generate</span>
+                <!-- 안내 버튼이 label 의 클릭을 가로채지 않게 div -->
+                <div class="stng-adv-section">
+                    <div class="stng-field stng-help-scope">
+                        <div class="stng-adv-title">
+                            <span data-i18n="nanogpt_tools.prefix">Common prompt prefix</span>
+                            <button type="button" class="stng-info" aria-expanded="false" title="Help" data-i18n="[title]nanogpt_tools.help"><i class="fa-solid fa-circle-info"></i></button>
+                        </div>
+                        <small class="stng-help" hidden data-i18n="nanogpt_tools.prefix_hint">Added in front of every prompt, for style or quality tags.</small>
+                        <textarea class="text_pole stng-img-prefix" rows="3" placeholder="masterpiece, best quality, ..."></textarea>
+                    </div>
+                    <div class="stng-field">
+                        <div class="stng-adv-title">
+                            <span data-i18n="nanogpt_tools.negative">Negative common prompt prefix</span>
+                        </div>
+                        <textarea class="text_pole stng-img-negative" rows="3" placeholder="lowres, bad anatomy, ..."></textarea>
+                    </div>
+                </div>
+
+                <div class="stng-adv-section stng-help-scope">
+                    <div class="stng-adv-title">
+                        <span data-i18n="nanogpt_tools.gen_values">Generation</span>
+                        <button type="button" class="stng-info" aria-expanded="false" title="Help" data-i18n="[title]nanogpt_tools.help"><i class="fa-solid fa-circle-info"></i></button>
+                    </div>
+                    <small class="stng-help" hidden data-i18n="nanogpt_tools.advanced_hint">Values you change here are saved and used next time. Some models ignore steps, CFG scale and the negative prompt.</small>
+                    <div class="stng-row stng-gap">
+                        <label class="stng-field stng-grow">
+                            <span class="stng-field-label" data-i18n="nanogpt_tools.steps">Sampling steps</span>
+                            <input type="number" class="text_pole stng-img-steps" min="1" max="150" step="1" inputmode="numeric" />
+                        </label>
+                        <label class="stng-field stng-grow">
+                            <span class="stng-field-label" data-i18n="nanogpt_tools.scale">CFG scale</span>
+                            <input type="number" class="text_pole stng-img-scale" min="0" max="30" step="0.5" inputmode="decimal" />
+                        </label>
+                    </div>
+                    <div class="stng-row stng-gap stng-img-recommend" hidden>
+                        <small class="stng-muted stng-grow stng-img-recommend-text"></small>
+                        <button type="button" class="menu_button stng-btn stng-btn-small stng-img-recommend-apply" data-i18n="nanogpt_tools.recommended_apply">Use recommended</button>
+                    </div>
+                </div>
+
+                <button type="button" class="menu_button stng-btn stng-btn-small stng-btn-quiet stng-img-import">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span data-i18n="nanogpt_tools.sd_import">Import from Image Generation</span>
                 </button>
-                <small class="stng-muted stng-img-quota"></small>
-            </div>
+            </details>
         </div>
 
-        <div class="stng-img-result" hidden>
-            <!-- 생성 중: 고른 크기 비율의 자리 + 지난 시간 -->
-            <div class="stng-img-pending" hidden>
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                <span></span>
-            </div>
-            <img class="stng-img-preview" alt="" />
-            <small class="stng-muted stng-img-meta"></small>
-            <div class="stng-img-actions">
-                <button type="button" class="menu_button stng-btn stng-img-send">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <!-- 글자는 image.js 가 넣는다(원래 메시지에 붙이면 '#12에 붙이기') --><span></span>
-                </button>
-                <button type="button" class="menu_button stng-btn stng-img-download">
-                    <i class="fa-solid fa-download"></i>
-                    <span data-i18n="nanogpt_tools.download">Save</span>
-                </button>
-                <button type="button" class="menu_button stng-btn stng-img-reuse">
-                    <i class="fa-solid fa-arrow-rotate-left"></i>
-                    <span data-i18n="nanogpt_tools.load_settings">Load settings</span>
-                </button>
-                <button type="button" class="menu_button stng-btn stng-img-delete">
-                    <i class="fa-solid fa-trash-can"></i>
-                    <span data-i18n="nanogpt_tools.delete">Delete</span>
-                </button>
-            </div>
-            <small class="stng-muted stng-send-nochat" hidden data-i18n="nanogpt_tools.send_no_chat">Open a chat to send images to it.</small>
-            <div class="stng-img-strip"></div>
+        <!-- 스크롤해도 화면 아래에 붙어 있는 생성 버튼. 결과·폼 어디를 보고 있어도 보이게 탭 맨 끝에 둔다 -->
+        <div class="stng-img-footer">
+            <div class="stng-img-status" hidden></div>
+            <button type="button" class="menu_button stng-btn stng-primary stng-img-generate">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span data-i18n="nanogpt_tools.generate">Generate</span>
+            </button>
+            <small class="stng-muted stng-img-quota"></small>
         </div>
     </section>
 </div>

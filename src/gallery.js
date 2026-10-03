@@ -310,7 +310,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         };
         row(tr('model', 'Model'), modelLabel(meta.model) === meta.model ? meta.model : `${modelLabel(meta.model)} (${meta.model})`);
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
-        row(`${tr('steps', 'Steps')} · ${tr('scale', 'CFG scale')}`, `${meta.steps || '-'} · ${meta.scale || '-'}`);
+        row(`${tr('steps', 'Sampling steps')} · ${tr('scale', 'CFG scale')}`, `${meta.steps || '-'} · ${meta.scale || '-'}`);
         row(tr('prompt', 'Prompt'), meta.prompt);
         row(tr('prefix', 'Common prompt prefix'), meta.promptPrefix);
         row(tr('negative', 'Negative common prompt prefix'), meta.negativePrompt);

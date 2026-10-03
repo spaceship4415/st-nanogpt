@@ -379,7 +379,7 @@ export function importFromImageGeneration() {
     }
     if (Number(sd.steps) > 0) {
         setSetting('steps', Number(sd.steps));
-        imported.push(tr('steps', 'Steps'));
+        imported.push(tr('steps', 'Sampling steps'));
     }
     if (Number.isFinite(Number(sd.scale))) {
         setSetting('scale', Number(sd.scale));
@@ -429,14 +429,23 @@ export function metaOf(entry) {
  * @param {boolean} [run]
  */
 export function applyImageMeta(meta, run = false) {
+    storeImageMeta(meta);
+    if (activeView) activeView.applySettings(run, meta.prompt ?? '');
+    else pendingApply = { run, prompt: meta.prompt ?? '' };
+}
+
+/**
+ * 생성 정보의 모델·크기·고급 값을 설정에 넣는다(프롬프트는 입력칸으로 따로)
+ * @param {import('./image-meta.js').ImageMeta} meta
+ */
+function storeImageMeta(meta) {
     if (meta.model) setSetting('model', meta.model);
     if (meta.width > 0 && meta.height > 0) setSetting('size', `${meta.width}x${meta.height}`);
     if (meta.steps > 0) setSetting('steps', meta.steps);
-    if (meta.scale > 0) setSetting('scale', meta.scale);
+    // CFG 0 도 쓰는 모델이 있다(z-image-turbo). 스텝이 기록돼 있으면 CFG 도 기록된 값이다
+    if (meta.steps > 0 && meta.scale >= 0) setSetting('scale', meta.scale);
     setSetting('promptPrefix', meta.promptPrefix ?? '');
     setSetting('negativePrompt', meta.negativePrompt ?? '');
-    if (activeView) activeView.applySettings(run, meta.prompt ?? '');
-    else pendingApply = { run, prompt: meta.prompt ?? '' };
 }
 
 /** @type {{ run: boolean, prompt: string }|null} */
@@ -531,11 +540,13 @@ export function mountImageView(container) {
 
     /** @type {AbortController|null} */
     let controller = null;
+    /** [다시 생성]: 이번 한 번은 그 그림의 원래 메시지에 그대로 붙게 @type {GeneratedImage['source']|undefined} */
+    let regenSource;
     /** @type {GeneratedImage|null} */
     let current = imagesForThisChat()[0] ?? null;
 
     if (!hasNanoGptKey()) {
-        $root.find('.stng-img-form').prop('hidden', true);
+        $root.find('.stng-img-form, .stng-img-footer').prop('hidden', true);
         $root.find('.stng-img-nokey').prop('hidden', false);
         pendingScene = null;
         return () => { };
@@ -603,7 +614,7 @@ export function mountImageView(container) {
         };
         $recommend.prop('hidden', !info);
         if (!info) return;
-        $recommendText.text(tr('recommended', 'Recommended for this model: {0} · {1}', describe(info.steps, tr('steps', 'Steps')), describe(info.scale, tr('scale', 'CFG scale'))));
+        $recommendText.text(tr('recommended', 'Recommended for this model: {0} · {1}', describe(info.steps, tr('steps', 'Sampling steps')), describe(info.scale, tr('scale', 'CFG scale'))));
         $steps.attr({ min: info.steps?.min ?? 1, max: info.steps?.max ?? 150 });
         $scale.attr({ min: info.scale?.min ?? 0, max: info.scale?.max ?? 30 });
         $recommend.find('.stng-img-recommend-apply').prop('hidden', info.steps?.recommended == null && info.scale?.recommended == null);
@@ -642,7 +653,14 @@ export function mountImageView(container) {
         $style.empty()
             .append(new Option(tr('style_none', '(Not saved)'), ''))
             .append(styles.map(s => new Option(s.name, s.name)));
-        $style.val(matchingStyle());
+        showStyle();
+    }
+
+    /** 드롭다운과 접힌 [고급] 제목에 지금 칸과 같은 스타일 이름을 보여 준다 */
+    function showStyle() {
+        const name = matchingStyle();
+        $style.val(name);
+        $root.find('.stng-adv-style').text(name).prop('hidden', !name);
     }
 
     /** @param {string} message @param {string} [value] */
@@ -658,6 +676,7 @@ export function mountImageView(container) {
         setSetting('negativePrompt', String(style.negative ?? ''));
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
+        showStyle();
     });
 
     $root.find('.stng-img-style-save').on('click', async () => {
@@ -717,11 +736,11 @@ export function mountImageView(container) {
     $size.on('change', () => setSetting('size', String($size.val())));
     $prefix.on('input', () => {
         setSetting('promptPrefix', String($prefix.val()));
-        $style.val(matchingStyle());
+        showStyle();
     });
     $negative.on('input', () => {
         setSetting('negativePrompt', String($negative.val()));
-        $style.val(matchingStyle());
+        showStyle();
     });
     $steps.on('change', () => {
         const param = getModelInfo(settings.model)?.steps;
@@ -806,7 +825,8 @@ export function mountImageView(container) {
         $pending.css('aspect-ratio', `${width} / ${height}`).prop('hidden', false);
         $preview.add($resultMeta).add($resultActions).prop('hidden', true);
         $result.prop('hidden', false);
-        $pending[0].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // 결과 카드는 폼 위에 있다. 아래에서 눌렀어도 생성 중 자리가 보이게 올려 준다
+        $result[0].scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
 
     function hidePending() {
@@ -825,6 +845,9 @@ export function mountImageView(container) {
             controller.abort();
             return;
         }
+        // [다시 생성]이 남긴 원래 메시지는 이번 한 번만 쓴다(칸이 비어 멈춰도 다음 생성에 남지 않게)
+        const source = regenSource;
+        regenSource = undefined;
         // 빈 필수 칸은 생성 요청 전에 그 칸을 짚어 준다
         const missing = !String($model.val() || '') ? $model : !String($prompt.val() || '').trim() ? $prompt : null;
         if (missing) {
@@ -845,9 +868,10 @@ export function mountImageView(container) {
                 size: String($size.val()),
                 negativePrompt: String($negative.val()),
                 // 메시지에서 쓴 프롬프트로 만들면 그 메시지를 기억해 두고, 채팅에 보낼 때 거기에 붙인다
-                source: sceneLink && sceneSourceId !== null
-                    ? { chatId: getContext().getCurrentChatId?.() || '', messageId: sceneSourceId, fingerprint: messageFingerprint(sceneSourceId) }
-                    : null,
+                source: source !== undefined ? source
+                    : sceneLink && sceneSourceId !== null
+                        ? { chatId: getContext().getCurrentChatId?.() || '', messageId: sceneSourceId, fingerprint: messageFingerprint(sceneSourceId) }
+                        : null,
             }, signal);
             hidePending();
             renderResult();
@@ -857,8 +881,8 @@ export function mountImageView(container) {
                 rememberScenePrompt(sceneLink, used);
                 renderScenePreview();
             }
-            // 결과는 폼 아래에 생기므로 보이게 내려 준다
-            $preview[0].scrollIntoView({ block: 'start', behavior: 'smooth' });
+            // 결과 카드(폼 위)가 보이게 올려 준다
+            $result[0].scrollIntoView({ block: 'start', behavior: 'smooth' });
         } catch (error) {
             hidePending();
             renderResult();
@@ -1143,6 +1167,16 @@ export function mountImageView(container) {
         }
     });
     $root.find('.stng-img-download').on('click', () => current && downloadImage(current));
+    // 이 그림과 같은 모델·크기·프롬프트·고급 값으로 한 장 더(원래 메시지가 있으면 거기에 붙는다)
+    $root.find('.stng-img-regen').on('click', () => {
+        if (!current || controller || sceneBusy) return;
+        storeImageMeta(metaOf(current));
+        sceneLink = null;
+        sceneSourceId = null;
+        fillForm(current.prompt);
+        regenSource = current.source ?? null;
+        $generate.trigger('click');
+    });
     // 마음에 안 드는 결과 바로 버리기. 채팅에 보낸 적이 있으면 거기서 깨져 보이므로 그때만 확인을 받는다
     const $discard = $root.find('.stng-img-delete');
     $discard.on('click', async () => {

@@ -66,6 +66,14 @@ export async function openPanel(tab) {
         select(this.dataset.tab);
     });
 
+    // ⓘ: 길게 늘어놓던 안내를 접어 두고 누르면 펼친다(휴대폰은 마우스를 올려 볼 수 없어 title 대신)
+    $root.on('click', '.stng-info', function () {
+        const $help = $(this).closest('.stng-help-scope').find('.stng-help').first();
+        const open = $help.prop('hidden');
+        $help.prop('hidden', !open);
+        $(this).attr('aria-expanded', String(open)).toggleClass('stng-open', open);
+    });
+
     // 모바일 키보드가 올라오면 화면(dvh)이 줄며 팝업도 줄어드는데, 팝업 안 스크롤은 그대로라 입력칸이 화면 밖으로 밀려난다.
     // 입력칸에 들어간 뒤 화면 크기가 바뀌면(키보드가 다 올라오면) 그 칸을 가운데로 끌어온다
     const typing = 'textarea, input:not([type]), input[type="text"], input[type="number"], input[type="search"]';
