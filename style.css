@@ -567,10 +567,10 @@ body.stng-no-mes-button .stng_mes_scene {
     overflow-wrap: anywhere;
 }
 
-/* 휴대폰: 세 버튼을 한 줄에 나눠 담고, 글자가 길면 줄바꿈 */
+/* 휴대폰: 네 버튼을 한 줄에 나눠 담고, 글자가 길면 줄바꿈 */
 .stng-img-actions {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
 }
 
@@ -992,7 +992,8 @@ body.stng-no-mes-button .stng_mes_scene {
 }
 
 /* 되돌릴 수 없는 동작이라 붉게 */
-.stng-gallery-actions .stng-gallery-delete.menu_button {
+.stng-gallery-actions .stng-gallery-delete.menu_button,
+.stng-img-actions .stng-img-delete.menu_button {
     color: #ff8a80;
     border-color: color-mix(in srgb, #d9534f 50%, var(--SmartThemeBorderColor));
 }

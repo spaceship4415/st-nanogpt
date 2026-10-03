@@ -1,14 +1,15 @@
-import { eventSource, event_types, neutralCharacterName, stopGeneration, syncMesToSwipe, systemUserName, updateMessageBlock } from '../../../../../script.js';
+import { eventSource, event_types, getRequestHeaders, neutralCharacterName, stopGeneration, syncMesToSwipe, systemUserName, updateMessageBlock } from '../../../../../script.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE } from '../../../../constants.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
+import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../../../RossAscends-mods.js';
 import { saveBase64AsFile } from '../../../../utils.js';
 import { ApiError, fetchImageModels, fetchModelInfo, generateImage, getModelInfo, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
-import { addInsert } from './inserts.js';
+import { addInsert, removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
-import { setImageMeta } from './image-meta.js';
+import { removeImageMeta, setImageMeta } from './image-meta.js';
 import { CHARACTER_SCENE, getRememberedPromptAt, messageFingerprint, getRememberedScenePrompt, getSceneProfileId, getScenePreview, lastSceneMessageId, listSceneMessages, promptFromScene, rememberScenePrompt, scenePromptLinkFor } from './scene.js';
 import { getSettings, setSetting } from './settings.js';
 import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './usage.js';
@@ -29,6 +30,7 @@ import { formatUsd, getUsageState, onUsageChange, scheduleAutoRefresh } from './
  * @property {{ chatId: string, messageId: number, fingerprint: string }|null} [source] 프롬프트를 쓴 메시지(채팅에 보낼 때 그 메시지에 붙인다)
  * @property {string} [folder] 저장할 갤러리 폴더(생성을 시작한 때의 채팅 기준)
  * @property {string|null} savedUrl 채팅에 보내려고 서버에 저장한 경로(같은 이미지를 두 번 올리지 않게)
+ * @property {boolean} [sent] 채팅에 보냈는지(지울 때 확인을 받는다)
  */
 
 /** 이번 세션에서 만든 이미지(최근 것이 앞). 새로고침하면 사라진다 @type {GeneratedImage[]} */
@@ -188,6 +190,34 @@ export function forgetSavedImage(url) {
 }
 
 /**
+ * 갤러리 파일 하나를 서버에서 지우고, 이 확장의 기록(생성 정보·메시지 아래 그림)도 정리한다
+ * @param {string} path 'user/images/<폴더>/<파일>'(앞의 / 는 있어도 된다)
+ */
+export async function deleteGalleryImage(path) {
+    path = path.replace(/^\/+/, '');
+    const response = await fetch('/api/images/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ path }),
+    });
+    // 이미 없는 파일이면 지운 것으로 친다
+    if (!response.ok && response.status !== 404) throw new Error(`HTTP ${response.status}`);
+    forgetSavedImage(`/${path}`);
+    removeImageMeta(path);
+    await removeInsertsByUrl(`/${path}`);
+}
+
+/**
+ * 이번 세션 이미지를 버린다: 갤러리에 저장돼 있으면 서버에서도 지운다
+ * @param {GeneratedImage} entry
+ */
+async function discardImage(entry) {
+    if (entry.savedUrl) await deleteGalleryImage(entry.savedUrl);
+    const index = sessionImages.indexOf(entry);
+    if (index >= 0) sessionImages.splice(index, 1);
+}
+
+/**
  * 생성 실패를 사용자가 알아듣고 다음에 뭘 해 볼지 알 수 있는 문장으로.
  * ST 서버는 NanoGPT 의 자세한 오류를 넘겨주지 않아 상태 코드로만 나눈다
  * @param {any} error
@@ -247,6 +277,7 @@ export async function sendImageToChat(entry) {
     // 화면에만 끼워 넣기: 채팅 데이터는 그대로 두고 그 메시지 아래에 보여 주기만(AI 에 안 감)
     if (attach?.mode === 'overlay') {
         await addInsert(attach.messageId, entry.savedUrl);
+        entry.sent = true;
         return entry.savedUrl;
     }
     // 원래 메시지에 첨부: 장면 자리에 남고 확장 없이도 보이지만, 이미지를 읽는 모델은 그림을 본다
@@ -263,6 +294,7 @@ export async function sendImageToChat(entry) {
         syncMesToSwipe(targetId);
         updateMessageBlock(targetId, target);
         await context.saveChat();
+        entry.sent = true;
         return entry.savedUrl;
     }
     /** @type {ChatMessage} */
@@ -285,6 +317,7 @@ export async function sendImageToChat(entry) {
     context.addOneMessage(message);
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId, 'extension');
     await context.saveChat();
+    entry.sent = true;
     return entry.savedUrl;
 }
 
@@ -1014,6 +1047,35 @@ export function mountImageView(container) {
         }
     });
     $root.find('.stng-img-download').on('click', () => current && downloadImage(current));
+    // 마음에 안 드는 결과 바로 버리기. 채팅에 보낸 적이 있으면 거기서 깨져 보이므로 그때만 확인을 받는다
+    const $discard = $root.find('.stng-img-delete');
+    $discard.on('click', async () => {
+        const entry = current;
+        if (!entry) return;
+        if (entry.sent) {
+            const message = $('<div></div>')
+                .append($('<p></p>').text(tr('gallery_delete_confirm', 'Delete this image from the server?')))
+                .append($('<p class="stng-muted"></p>').text(tr('gallery_delete_warning', 'This cannot be undone. If it is shown under a message, it is removed there too; if it was attached to a message or sent to the end of the chat, it will show as broken there.')));
+            const result = await callGenericPopup(message, POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
+            if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+        }
+        $discard.prop('disabled', true);
+        try {
+            const shown = imagesForThisChat();
+            const position = shown.indexOf(entry);
+            await discardImage(entry);
+            // 지운 자리의 다음(없으면 이전) 이미지를 보여 준다
+            const rest = imagesForThisChat();
+            current = rest[Math.min(Math.max(position, 0), rest.length - 1)] ?? null;
+            renderResult();
+            toastr.success(tr('gallery_deleted', 'Image deleted.'));
+        } catch (error) {
+            console.error(LOG_PREFIX, 'failed to delete image', error);
+            toastr.error(error?.message || String(error), tr('gallery_delete_failed', 'Could not delete the image'));
+        } finally {
+            $discard.prop('disabled', false);
+        }
+    });
     // 이 이미지를 만든 모델·크기·프롬프트·고급 설정을 모두 입력칸으로 불러온다
     $root.find('.stng-img-reuse').on('click', () => {
         if (current) applyImageMeta(metaOf(current));

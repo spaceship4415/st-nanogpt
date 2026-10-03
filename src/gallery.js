@@ -2,13 +2,12 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { GALLERY_PAGE, LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
-import { removeInsertsByUrl } from './inserts.js';
 import { onHorizontalSwipe } from './gestures.js';
 import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { modelLabel } from './api.js';
-import { filterByChat, getImageMeta, removeImageMeta } from './image-meta.js';
-import { attachTarget, canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
+import { filterByChat, getImageMeta } from './image-meta.js';
+import { attachTarget, canSendToChat, deleteGalleryImage, galleryFolder, sendImageToChat } from './image.js';
 import { getSettings, setSetting } from './settings.js';
 
 /*
@@ -218,22 +217,10 @@ export function mountGalleryView(container, { onUseMeta }) {
     });
 
     /**
-     * 갤러리 파일 하나를 서버에서 지우고, 이 확장의 기록(생성 정보·메시지 아래 그림)도 정리한다
      * @param {string} folder
      * @param {string} file
      */
-    async function deleteFile(folder, file) {
-        const path = `user/images/${folder}/${file}`;
-        const response = await fetch('/api/images/delete', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ path }),
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        forgetSavedImage(`/${path}`);
-        removeImageMeta(path);
-        await removeInsertsByUrl(`/${path}`);
-    }
+    const deleteFile = (folder, file) => deleteGalleryImage(`user/images/${folder}/${file}`);
 
     $selectBar.find('.stng-gallery-bulk-delete').on('click', async () => {
         if (!selected.size) return;
