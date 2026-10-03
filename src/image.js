@@ -3,7 +3,7 @@ import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE } from '../../../../constants.j
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../../../RossAscends-mods.js';
 import { saveBase64AsFile } from '../../../../utils.js';
-import { fetchImageModels, generateImage, hasNanoGptKey, NoKeyError } from './api.js';
+import { ApiError, fetchImageModels, generateImage, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
 import { openLightbox } from './lightbox.js';
@@ -129,6 +129,18 @@ export function forgetSavedImage(url) {
     for (const entry of sessionImages) {
         if (entry.savedUrl === url) entry.savedUrl = null;
     }
+}
+
+/**
+ * 생성 실패를 사용자가 알아듣고 다음에 뭘 해 볼지 알 수 있는 문장으로.
+ * ST 서버는 NanoGPT 의 자세한 오류를 넘겨주지 않아 상태 코드로만 나눈다
+ * @param {any} error
+ */
+function friendlyError(error) {
+    if (error instanceof NoKeyError || error?.status === 400) return tr('err_no_key', 'No NanoGPT API key. Save one in API Connections.');
+    if (error instanceof ApiError) return tr('err_nanogpt', 'NanoGPT could not make the image. Try another model or size, or try again later. This also happens when your balance or daily limit runs out.');
+    if (error instanceof TypeError) return tr('err_network', 'Could not reach the SillyTavern server. Check your connection.');
+    return tr('generate_failed', 'Generation failed: {0}', error?.message || String(error));
 }
 
 /**
@@ -541,8 +553,7 @@ export function mountImageView(container) {
                 setStatus(tr('stopped', 'Stopped. NanoGPT may still finish the image and charge for it.'), 'info');
             } else {
                 console.error(LOG_PREFIX, 'image generation failed', error);
-                const message = error instanceof NoKeyError ? tr('no_key_short', 'No NanoGPT API key.') : (error?.message || String(error));
-                setStatus(tr('generate_failed', 'Generation failed: {0}', message), 'error');
+                setStatus(friendlyError(error), 'error');
             }
         } finally {
             controller = null;
@@ -759,7 +770,7 @@ export function mountImageView(container) {
         $result.prop('hidden', !current);
         if (current) {
             $preview.attr('src', toDataUrl(current)).attr('alt', current.prompt);
-            const meta = [current.model, `${current.width}×${current.height}`];
+            const meta = [modelLabel(current.model), `${current.width}×${current.height}`];
             // 어느 갤러리 폴더(캐릭터)에 들어갔는지 보여 준다
             const folder = galleryFolderOf(current.savedUrl);
             if (folder) meta.push(tr('saved_in_folder', 'Saved to {0} gallery', folder));

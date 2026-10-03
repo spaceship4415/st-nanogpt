@@ -4,6 +4,7 @@ import { LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
 import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
+import { modelLabel } from './api.js';
 import { filterByChat, getImageMeta, removeImageMeta } from './image-meta.js';
 import { canSendToChat, forgetSavedImage, galleryFolder, sendImageToChat } from './image.js';
 import { getSettings, setSetting } from './settings.js';
@@ -170,13 +171,13 @@ export function mountGalleryView(container, { onUseMeta }) {
             return;
         }
         currentMeta = meta;
-        $info.find('summary').text(`${tr('gallery_info', 'Generation info')} · ${meta.model} · ${meta.width}×${meta.height}`);
+        $info.find('summary').text(`${tr('gallery_info', 'Generation info')} · ${modelLabel(meta.model)} · ${meta.width}×${meta.height}`);
         const $list = $info.find('.stng-meta-list').empty();
         /** @param {string} label @param {string} value */
         const row = (label, value) => {
             if (value) $list.append($('<dt></dt>').text(label), $('<dd></dd>').text(value));
         };
-        row(tr('model', 'Model'), meta.model);
+        row(tr('model', 'Model'), modelLabel(meta.model) === meta.model ? meta.model : `${modelLabel(meta.model)} (${meta.model})`);
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
         row(`${tr('steps', 'Steps')} · ${tr('scale', 'CFG scale')}`, `${meta.steps || '-'} · ${meta.scale || '-'}`);
         row(tr('prompt', 'Prompt'), meta.prompt);

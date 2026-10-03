@@ -169,5 +169,8 @@
     "nanogpt_tools.scene_character_preview": "캐릭터: {0}",
     "nanogpt_tools.scene_working_character": "캐릭터 설정으로 프롬프트를 쓰는 중…\n버튼을 다시 누르면 취소합니다.",
     "nanogpt_tools.scene_no_card": "이 캐릭터에는 그릴 설명이 없습니다.",
-    "nanogpt_tools.scene_persona_preview": "페르소나: {0}"
+    "nanogpt_tools.scene_persona_preview": "페르소나: {0}",
+    "nanogpt_tools.err_no_key": "NanoGPT API 키가 없습니다. API 연결에서 저장하세요.",
+    "nanogpt_tools.err_nanogpt": "NanoGPT에서 이미지를 만들지 못했습니다. 다른 모델이나 크기로 바꾸거나 잠시 후 다시 시도하세요. 잔액이나 하루 한도가 부족해도 이렇게 실패합니다.",
+    "nanogpt_tools.err_network": "SillyTavern 서버에 연결하지 못했습니다. 연결 상태를 확인하세요."
 }

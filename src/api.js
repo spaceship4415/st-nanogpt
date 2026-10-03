@@ -33,6 +33,27 @@ import { SECRET_KEYS, secret_state } from '../../../../secrets.js';
  * }} subscription
  */
 
+/** 서버가 오류 상태로 답했을 때(상태 코드를 들고 있어 안내 문구를 고를 수 있다) */
+export class ApiError extends Error {
+    /** @param {number} status */
+    constructor(status) {
+        super(`HTTP ${status}`);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
+/** 모델 ID → 목록에 나오는 이름(받아 온 뒤부터) @type {Map<string, string>} */
+const modelNames = new Map();
+
+/**
+ * 화면에 보여 줄 모델 이름. 목록을 아직 안 받았거나 목록에 없으면 ID 그대로
+ * @param {string} id
+ */
+export function modelLabel(id) {
+    return modelNames.get(id) || id;
+}
+
 export class NoKeyError extends Error {
     constructor() {
         super('NanoGPT API key is not set');
@@ -54,7 +75,7 @@ export async function fetchCredits() {
         headers: getRequestHeaders(),
     });
     if (response.status === 400) throw new NoKeyError();
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status);
 
     const data = await response.json();
     if (!Number.isFinite(Number(data?.usd_balance))) throw new Error('Invalid response');
@@ -77,9 +98,10 @@ export function fetchImageModels(force = false) {
                 method: 'POST',
                 headers: getRequestHeaders({ omitContentType: true }),
             });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) throw new ApiError(response.status);
             const models = await response.json();
             if (!Array.isArray(models)) throw new Error('Invalid response');
+            for (const m of models) if (m.value && m.text) modelNames.set(m.value, m.text);
             return models.sort((a, b) => String(a.text).localeCompare(String(b.text)));
         })();
         // 실패한 결과를 붙잡고 있지 않게 해서 다음에 다시 시도할 수 있게 한다
@@ -120,7 +142,7 @@ export async function generateImage({ model, prompt, negativePrompt = '', width,
             nImages: 1,
         }),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status);
 
     const data = await response.json();
     if (!data?.image) throw new Error('Invalid response');

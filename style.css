@@ -1143,3 +1143,24 @@ body.stng-no-mes-button .stng_mes_scene {
 .stng-gallery-viewer img {
     cursor: zoom-in;
 }
+
+/* 넓은 화면: 모델·크기를 한 줄에 나란히(나머지는 전체 폭) */
+@media (min-width: 768px) {
+    .stng-img-form {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        column-gap: 12px;
+    }
+
+    .stng-img-form > * {
+        grid-column: 1 / -1;
+    }
+
+    .stng-img-form > .stng-field-model {
+        grid-column: 1;
+    }
+
+    .stng-img-form > .stng-field-size {
+        grid-column: 2;
+    }
+}
