@@ -202,5 +202,8 @@
     "nanogpt_tools.gallery_bulk_delete_confirm": "이미지 {0}장을 서버에서 삭제할까요?",
     "nanogpt_tools.gallery_deleting": "삭제 중… {0} / {1}",
     "nanogpt_tools.gallery_bulk_delete_partial": "{0}장 삭제, {1}장 실패했습니다.",
-    "nanogpt_tools.gallery_bulk_deleted": "이미지 {0}장을 삭제했습니다."
+    "nanogpt_tools.gallery_bulk_deleted": "이미지 {0}장을 삭제했습니다.",
+    "nanogpt_tools.recommended": "이 모델 권장값: {0} · {1}",
+    "nanogpt_tools.param_unused": "{0} 안 씀",
+    "nanogpt_tools.recommended_apply": "권장값으로"
 }

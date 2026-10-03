@@ -3,7 +3,7 @@ import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE } from '../../../../constants.j
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../../../RossAscends-mods.js';
 import { saveBase64AsFile } from '../../../../utils.js';
-import { ApiError, fetchImageModels, generateImage, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
+import { ApiError, fetchImageModels, fetchModelInfo, generateImage, getModelInfo, hasNanoGptKey, modelLabel, NoKeyError } from './api.js';
 import { LOG_PREFIX, MAX_SESSION_IMAGES, SIZE_PRESETS } from './constants.js';
 import { tr } from './i18n.js';
 import { addInsert } from './inserts.js';
@@ -51,6 +51,47 @@ function parseSize(size) {
 }
 
 /**
+ * 모델이 받는 크기 중 원하는 크기와 가장 가까운 것: 비율이 가장 비슷한 것, 그중 넓이가 가장 비슷한 것
+ * @param {import('./api.js').ModelSize[]} sizes
+ * @param {number} width
+ * @param {number} height
+ */
+function nearestSize(sizes, width, height) {
+    const ratio = Math.log(width / height);
+    const area = Math.log(width * height);
+    const distance = (/** @type {import('./api.js').ModelSize} */ s) =>
+        Math.abs(Math.log(s.width / s.height) - ratio) * 10 + Math.abs(Math.log(s.width * s.height) - area);
+    return sizes.reduce((best, s) => distance(s) < distance(best) ? s : best);
+}
+
+/**
+ * @param {number} value
+ * @param {import('./api.js').ModelParam|null|undefined} param
+ */
+function clampParam(value, param) {
+    if (param?.min !== null && param?.min !== undefined) value = Math.max(param.min, value);
+    if (param?.max !== null && param?.max !== undefined) value = Math.min(param.max, value);
+    return value;
+}
+
+/**
+ * 크기 선택지. 모델이 받는 크기를 알면 그것만, 모르면 기본 선택지
+ * @param {string} model
+ * @returns {{ value: string, text: string }[]}
+ */
+function sizeOptions(model) {
+    const sizes = getModelInfo(model)?.sizes;
+    if (!sizes) return SIZE_PRESETS.map(p => ({ value: p.value, text: `${tr(p.label, p.english)} (${p.value.replace('x', '×')})` }));
+    const shape = (/** @type {import('./api.js').ModelSize} */ s) => s.width === s.height ? 0 : s.height > s.width ? 1 : 2;
+    return [...sizes]
+        .sort((a, b) => shape(a) - shape(b) || a.width * a.height - b.width * b.height)
+        .map(s => {
+            const label = [tr('size_square', 'Square'), tr('size_portrait', 'Portrait'), tr('size_landscape', 'Landscape')][shape(s)];
+            return { value: `${s.width}x${s.height}`, text: `${label} (${s.width}×${s.height})` };
+        });
+}
+
+/**
  * 설정값(또는 overrides)으로 이미지를 한 장 만든다. 설정의 접두 문구(promptPrefix)가 앞에 붙는다.
  * @param {object} options
  * @param {string} options.prompt
@@ -67,10 +108,16 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
     if (!finalModel) throw new Error(tr('no_model', 'Choose an image model first.'));
     if (!prompt?.trim()) throw new Error(tr('no_prompt', 'Enter a prompt.'));
 
-    const { width, height } = parseSize(size || settings.size);
+    let { width, height } = parseSize(size || settings.size);
+    // 모델이 받지 않는 크기면 가장 가까운 크기로 바꾼다(명령어·메시지 버튼으로 만들 때도)
+    await fetchModelInfo().catch(() => { });
+    const info = getModelInfo(finalModel);
+    const fitted = info?.sizes ? nearestSize(info.sizes, width, height) : null;
+    if (fitted) ({ width, height } = fitted);
     const negative = negativePrompt ?? settings.negativePrompt;
-    const steps = Number(settings.steps) || 30;
-    const scale = Number(settings.scale) || 7.5;
+    // 모델이 받는 범위를 벗어나면 범위 안으로(예: 스텝이 12까지인 터보 모델에 30을 보내지 않게)
+    const steps = clampParam(Number.isFinite(Number(settings.steps)) ? Number(settings.steps) : 30, info?.steps);
+    const scale = clampParam(Number.isFinite(Number(settings.scale)) ? Number(settings.scale) : 7.5, info?.scale);
     // 기다리는 사이 채팅을 옮겨도(명령어로 만들 때) 시작한 채팅의 폴더·기록으로 남게 미리 잡아 둔다
     const chatId = getContext().getCurrentChatId?.() || null;
     const folder = galleryFolder();
@@ -83,6 +130,8 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
             height,
             steps,
             scale,
+            resolution: fitted?.resolution,
+            paramKeys: { steps: info?.steps?.key, scale: info?.scale?.key },
         }, signal);
 
         /** @type {GeneratedImage} */
@@ -470,11 +519,6 @@ export function mountImageView(container) {
      * @param {string} [promptText]
      */
     function fillForm(promptText) {
-        $size.empty().append(SIZE_PRESETS.map(p => new Option(`${tr(p.label, p.english)} (${p.value.replace('x', '×')})`, p.value)));
-        if (!SIZE_PRESETS.some(p => p.value === settings.size)) {
-            $size.append(new Option(settings.size.replace('x', '×'), settings.size));
-        }
-        $size.val(settings.size);
         if (promptText !== undefined) $prompt.val(promptText);
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
@@ -484,14 +528,88 @@ export function mountImageView(container) {
             $model.append(new Option(settings.model, settings.model));
         }
         $model.val(settings.model);
+        fillModelInfo();
     }
+
+    /** 고른 모델에 맞춰 크기 선택지와 권장 스텝·CFG 안내를 다시 그린다 */
+    function fillModelInfo() {
+        fillSizes();
+        renderRecommend();
+    }
+
+    /**
+     * 고른 모델이 받는 크기로 선택지를 다시 채운다. 저장된 크기를 그 모델이 받지 않으면
+     * 비율이 가장 비슷한 크기로 바꿔 저장한다(모델을 바꿔도 세로·가로 느낌은 그대로)
+     */
+    function fillSizes() {
+        const options = sizeOptions(settings.model);
+        $size.empty().append(options.map(o => new Option(o.text, o.value)));
+        const sizes = getModelInfo(settings.model)?.sizes;
+        if (sizes && !options.some(o => o.value === settings.size)) {
+            const { width, height } = parseSize(settings.size);
+            const fitted = nearestSize(sizes, width, height);
+            setSetting('size', `${fitted.width}x${fitted.height}`);
+        } else if (!options.some(o => o.value === settings.size)) {
+            $size.append(new Option(settings.size.replace('x', '×'), settings.size));
+        }
+        $size.val(settings.size);
+    }
+
+    const $recommend = $root.find('.stng-img-recommend');
+    const $recommendText = $recommend.find('.stng-img-recommend-text');
+
+    /** 이 모델의 권장값·범위 안내. 모델 정보가 없으면 숨긴다 */
+    function renderRecommend() {
+        const info = getModelInfo(settings.model);
+        const describe = (/** @type {import('./api.js').ModelParam|null} */ param, /** @type {string} */ name) => {
+            if (!param) return tr('param_unused', '{0}: not used', name);
+            const range = (param.min !== null && param.max !== null) ? ` (${param.min}–${param.max})` : '';
+            return `${name} ${param.recommended ?? '?'}${range}`;
+        };
+        $recommend.prop('hidden', !info);
+        if (!info) return;
+        $recommendText.text(tr('recommended', 'Recommended for this model: {0} · {1}', describe(info.steps, tr('steps', 'Steps')), describe(info.scale, tr('scale', 'CFG scale'))));
+        $steps.attr({ min: info.steps?.min ?? 1, max: info.steps?.max ?? 150 });
+        $scale.attr({ min: info.scale?.min ?? 0, max: info.scale?.max ?? 30 });
+        $recommend.find('.stng-img-recommend-apply').prop('hidden', info.steps?.recommended == null && info.scale?.recommended == null);
+    }
+
+    /** 모델의 권장 스텝·CFG 로 바꾼다(모델이 받지 않거나 권장값이 없는 것은 그대로) */
+    function applyRecommended() {
+        const info = getModelInfo(settings.model);
+        if (info?.steps?.recommended != null) setSetting('steps', info.steps.recommended);
+        if (info?.scale?.recommended != null) setSetting('scale', info.scale.recommended);
+        $steps.val(settings.steps);
+        $scale.val(settings.scale);
+    }
+    $recommend.find('.stng-img-recommend-apply').on('click', applyRecommended);
+
+    /** 입력칸 값을 숫자로, 모델이 받는 범위(모르면 기본 범위) 안으로 */
+    const readNumber = (/** @type {JQuery} */ $input, /** @type {number} */ fallback, /** @type {number} */ min, /** @type {number} */ max) => {
+        const text = String($input.val()).trim();
+        const value = Number(text);
+        return (text !== '' && Number.isFinite(value)) ? Math.max(min, Math.min(max, value)) : fallback;
+    };
 
     $size.on('change', () => setSetting('size', String($size.val())));
     $prefix.on('input', () => setSetting('promptPrefix', String($prefix.val())));
     $negative.on('input', () => setSetting('negativePrompt', String($negative.val())));
-    $steps.on('change', () => setSetting('steps', Math.max(1, Math.min(150, Number($steps.val()) || 30))));
-    $scale.on('change', () => setSetting('scale', Math.max(0, Math.min(30, Number($scale.val()) || 7.5))));
-    $model.on('change', () => setSetting('model', String($model.val())));
+    $steps.on('change', () => {
+        const param = getModelInfo(settings.model)?.steps;
+        setSetting('steps', Math.round(readNumber($steps, 30, param?.min ?? 1, param?.max ?? 150)));
+        $steps.val(settings.steps);
+    });
+    $scale.on('change', () => {
+        const param = getModelInfo(settings.model)?.scale;
+        setSetting('scale', readNumber($scale, 7.5, param?.min ?? 0, param?.max ?? 30));
+        $scale.val(settings.scale);
+    });
+    // 모델을 바꾸면 그 모델의 권장 스텝·CFG 로 맞춘다(바꾼 값은 다시 고칠 수 있다)
+    $model.on('change', () => {
+        setSetting('model', String($model.val()));
+        applyRecommended();
+        fillModelInfo();
+    });
     fillForm('');
 
     $root.find('.stng-img-import').on('click', () => {
@@ -524,8 +642,13 @@ export function mountImageView(container) {
             $model.prop('disabled', false);
         }
     }
-    $root.find('.stng-img-models-refresh').on('click', () => loadModels(true));
+    $root.find('.stng-img-models-refresh').on('click', () => {
+        loadModels(true);
+        fetchModelInfo(true).then(fillModelInfo, () => { });
+    });
     loadModels();
+    // 크기·권장값은 모델 목록과 따로 온다. 못 받으면 기본 크기 선택지 그대로, 안내는 숨김
+    fetchModelInfo().then(fillModelInfo, error => console.warn(LOG_PREFIX, 'failed to load model info', error));
 
     // --- 생성
     function setBusy(busy) {
