@@ -11,7 +11,8 @@ It only uses the NanoGPT endpoints already in SillyTavern. Your API key stays in
 - **Usage badge**: a small floating button below the top bar or above the message box (left, center or right) showing your balance and this week's subscription usage, e.g. `$12.35 · Wk 42%`. Tap it to open the panel.
 - **Usage tab**: USD/NANO balance, subscription status and end date, and progress bars for weekly tokens, daily tokens and daily images, with when each one resets.
 - **Auto refresh**: after each reply from NanoGPT and each generated image (at most every 15 seconds).
-- **Image tab**: pick a model and size, write a prompt or have your chat model write one from the current scene (**From chat**), then generate. You can send the result to the chat, save it, or reuse its prompt. Images made this session are kept as thumbnails.
+- **Image tab**: pick a model and size, write a prompt or have your chat model write one from a message (**Prompt from message**), then generate. You can send the result to the chat, save it, or reuse its prompt. Images made this session are kept as thumbnails. Everything you set is remembered, and **Advanced → Import from Image Generation** copies size, steps, CFG, prompt prefix and negative prompt (and the model when its source is NanoGPT) from SillyTavern's Image Generation extension. This happens once automatically if that extension already uses NanoGPT.
+- **Prompt from message**: choose the message to draw: the latest by default, or one of the last five. The chat model gets that message, a few earlier ones for context, and the character and persona descriptions, so it costs far fewer tokens than a normal reply. For older messages, tap ⚡ in that message's … menu.
 - **Wand menu**: a **NanoGPT** entry showing your balance.
 - **Slash commands**
   - `/nanogpt [usage|image]` opens the panel

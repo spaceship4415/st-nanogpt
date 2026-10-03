@@ -20,12 +20,15 @@ export const SIZE_PRESETS = Object.freeze([
     { value: '512x512', label: 'size_small', english: 'Small square' },
 ]);
 
-export const DEFAULT_SCENE_PROMPT = 'Ignore previous instructions. Describe the current scene of the story as a comma-separated list of short keywords for an image generator: characters with their appearance, clothing, pose and expression, then the place, lighting and mood. Write it in English. Output only the keyword list, nothing else.';
+export const DEFAULT_SCENE_PROMPT = 'You write prompts for an image generator. Use the character descriptions and the story so far only as reference, and describe the moment in [Scene to illustrate] as a comma-separated list of short English keywords: who is in it with their appearance, clothing, pose and expression, then the place, lighting and mood. Output only the keyword list, nothing else.';
+
+/** v1 의 기본 지시문. 사용자가 고치지 않았으면 v2 에서 새 기본값으로 바꾼다 */
+export const LEGACY_SCENE_PROMPT_V1 = 'Ignore previous instructions. Describe the current scene of the story as a comma-separated list of short keywords for an image generator: characters with their appearance, clothing, pose and expression, then the place, lighting and mood. Write it in English. Output only the keyword list, nothing else.';
 
 /** 배지 위치 '세로-가로'. 설정 화면의 선택지 순서와 같다 */
 export const BADGE_POSITIONS = Object.freeze(['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right']);
 
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
@@ -46,9 +49,19 @@ export const DEFAULT_SETTINGS = Object.freeze({
     steps: 30,
     scale: 7.5,
     negativePrompt: '',
+    // 모든 프롬프트 앞에 붙는 고정 문구(화풍·품질 태그 등)
+    promptPrefix: '',
     lastPrompt: '',
+    // 이미지 생성 확장(SD) 설정을 처음 한 번 자동으로 가져왔는지
+    sdImported: false,
     // 채팅에 보낸 이미지 메시지를 AI 프롬프트에서 숨김(SD 확장의 기본 동작과 같다)
     sendHidden: true,
-    // [장면으로 프롬프트 만들기]에 쓰는 지시문
+    // [메시지로 프롬프트]에 쓰는 지시문(시스템 프롬프트로 보낸다)
     scenePrompt: DEFAULT_SCENE_PROMPT,
+    // 메시지 … 메뉴의 [이 메시지로 이미지] 버튼
+    messageButton: true,
+    // 장면 메시지 앞에 참고로 붙일 메시지 수
+    sceneContextMessages: 4,
+    // 캐릭터·페르소나 설명(외모 등)을 참고로 붙일지
+    sceneIncludeCards: true,
 });

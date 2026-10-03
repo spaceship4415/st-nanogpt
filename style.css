@@ -189,6 +189,10 @@
     50% { opacity: 0.3; }
 }
 
+body.stng-no-mes-button .stng_mes_scene {
+    display: none !important;
+}
+
 /* 마법봉 메뉴 항목의 잔액 */
 #stng_wand .stng-wand-balance {
     margin-left: auto;
@@ -399,6 +403,73 @@
     transform: rotate(180deg);
 }
 
+/* 기준 메시지 드롭다운 + [채팅으로 만들기]: 드롭다운이 남는 폭을 다 쓴다 */
+.stng-scene {
+    display: flex;
+    gap: 6px;
+}
+
+.stng-panel .stng-scene .text_pole {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    font-size: 16px;
+}
+
+/* [메시지로 프롬프트] 작성 중: 프롬프트 칸을 덮는 안내 */
+.stng-prompt-wrap {
+    position: relative;
+}
+
+.stng-prompt-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+    line-height: 1.4;
+    white-space: pre-line;
+    background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 85%, transparent);
+}
+
+.stng-prompt-overlay i {
+    color: var(--SmartThemeQuoteColor);
+}
+
+/* 고른 메시지 확인용 두 줄 미리보기 */
+.stng-scene-preview {
+    padding: 8px 10px;
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+    border-radius: 6px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    background-color: var(--black30a);
+}
+
+.stng-scene-preview-name {
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.stng-scene-preview-text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    opacity: 0.85;
+}
+
+.stng-advanced > .stng-img-import.menu_button {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
 .stng-advanced > .stng-field,
 .stng-advanced > .stng-row {
     margin-bottom: 10px;
@@ -406,6 +477,20 @@
 
 .stng-img-quota {
     text-align: center;
+}
+
+/* 생성 버튼 묶음: 폼이 길어도 팝업 스크롤 영역 아래에 붙어 있다 */
+.stng-img-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 -4px;
+    padding: 8px 4px 6px;
+    background-color: var(--SmartThemeBlurTintColor);
+    box-shadow: 0 -8px 12px -8px var(--black50a);
 }
 
 .stng-img-status {

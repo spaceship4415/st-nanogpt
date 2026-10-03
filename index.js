@@ -7,9 +7,9 @@ import { hasNanoGptKey } from './src/api.js';
 import { installBadge, refreshBadge } from './src/badge.js';
 import { DEFAULT_SCENE_PROMPT, EXTENSION_NAME, LOG_PREFIX, SIZE_PRESETS } from './src/constants.js';
 import { tr } from './src/i18n.js';
-import { createImage, sendImageToChat } from './src/image.js';
+import { createImage, sendImageToChat, useSceneMessage } from './src/image.js';
 import { openPanel } from './src/panel.js';
-import { getSettings, loadSettings, setSetting } from './src/settings.js';
+import { clampContext, getSettings, loadSettings, setSetting } from './src/settings.js';
 import { formatCount, formatUsd, isNanoGptChatSource, percentOf, refreshUsage, scheduleAutoRefresh } from './src/usage.js';
 
 async function mountSettingsPanel() {
@@ -24,7 +24,13 @@ async function mountSettingsPanel() {
         $(this).prop('checked', !!settings[key]).on('change', function () {
             setSetting(/** @type {any} */ (key), $(this).prop('checked'));
             refreshBadge();
+            refreshMessageButton();
         });
+    });
+    $panel.find('#st_nanogpt_scene_context').val(settings.sceneContextMessages).on('change', function () {
+        const value = clampContext($(this).val());
+        $(this).val(value);
+        setSetting('sceneContextMessages', value);
     });
     $panel.find('select[data-setting], textarea[data-setting]').each(function () {
         const key = this.dataset.setting;
@@ -126,9 +132,33 @@ function registerSlashCommands() {
     }));
 }
 
+/**
+ * 메시지의 … 메뉴에 [이 메시지로 이미지] 버튼을 넣는다. 누르면 이미지 탭을 열고 그 메시지로 프롬프트를 만든다.
+ * 새로 그려지는 메시지는 #message_template 을 복사하므로 템플릿과 이미 그려진 메시지 양쪽에 넣는다.
+ */
+function installMessageButton() {
+    const html = `<div class="mes_button stng_mes_scene fa-solid fa-bolt" title="${tr('mes_button', 'NanoGPT image from this message')}"></div>`;
+    $('#message_template .extraMesButtons').prepend(html);
+    $('#chat .mes .extraMesButtons').each(function () {
+        if (!$(this).find('.stng_mes_scene').length) $(this).prepend(html);
+    });
+    $(document).on('click', '.stng_mes_scene', function () {
+        const messageId = Number($(this).closest('.mes').attr('mesid'));
+        if (!Number.isInteger(messageId)) return;
+        useSceneMessage(messageId, true);
+        openPanel('image');
+    });
+    refreshMessageButton();
+}
+
+function refreshMessageButton() {
+    $('body').toggleClass('stng-no-mes-button', !getSettings().messageButton);
+}
+
 jQuery(async () => {
     loadSettings();
     installBadge(() => openPanel());
+    installMessageButton();
 
     try {
         await mountSettingsPanel();

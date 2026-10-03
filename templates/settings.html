@@ -70,11 +70,41 @@
                     </span>
                 </label>
 
+            </section>
+
+            <section class="stng-group">
+                <div class="stng-group-title">
+                    <i class="fa-solid fa-feather"></i>
+                    <span data-i18n="nanogpt_tools.settings_group_scene">Prompt from message</span>
+                </div>
+
+                <label class="stng-item" for="st_nanogpt_mes_button">
+                    <input id="st_nanogpt_mes_button" type="checkbox" data-setting="messageButton" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_mes_button">Image button in each message's … menu</span>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_mes_button_hint">Opens the Image tab and writes a prompt from that message right away.</small>
+                    </span>
+                </label>
+
+                <label class="stng-item" for="st_nanogpt_scene_cards">
+                    <input id="st_nanogpt_scene_cards" type="checkbox" data-setting="sceneIncludeCards" />
+                    <span class="stng-item-text">
+                        <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_cards">Include character and persona descriptions</span>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_cards_hint">Helps the model get looks and clothing right. Costs more tokens with long cards.</small>
+                    </span>
+                </label>
+
+                <label class="stng-field" for="st_nanogpt_scene_context">
+                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_context">Earlier messages to include</span>
+                    <input id="st_nanogpt_scene_context" type="number" class="text_pole" min="0" max="20" step="1" inputmode="numeric" />
+                    <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_context_hint">Messages before the chosen one, sent as context (0–20). Hidden messages are skipped.</small>
+                </label>
+
                 <label class="stng-field" for="st_nanogpt_scene_prompt">
-                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_prompt">Instruction for "From chat"</span>
+                    <span class="stng-item-title" data-i18n="nanogpt_tools.setting_scene_prompt">Instruction</span>
                     <textarea id="st_nanogpt_scene_prompt" class="text_pole" rows="4" data-setting="scenePrompt"></textarea>
                     <span class="stng-row stng-spread">
-                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_prompt_hint">Sent to your chat API together with the chat to write an image prompt.</small>
+                        <small class="stng-muted" data-i18n="nanogpt_tools.setting_scene_prompt_hint">Sent as the system prompt. The chosen message is marked [Scene to illustrate].</small>
                         <button type="button" class="menu_button stng-btn stng-btn-small stng-scene-reset">
                             <i class="fa-solid fa-arrow-rotate-left"></i>
                             <span data-i18n="nanogpt_tools.reset">Reset</span>
