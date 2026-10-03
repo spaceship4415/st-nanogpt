@@ -813,10 +813,12 @@ export function mountImageView(container) {
         setSetting('scale', readNumber($scale, 7.5, param?.min ?? 0, param?.max ?? 30));
         $scale.val(settings.scale);
     });
-    // 모델을 바꾸면 그 모델의 권장 스텝·CFG 로 맞춘다(바꾼 값은 다시 고칠 수 있다)
+    // 모델을 바꿔도 사용자가 넣은 샘플링 단계·CFG 는 그대로 둔다(권장값은 안내와 [권장값으로] 버튼으로만).
+    // 모델을 처음 고를 때(아직 고른 적이 없을 때)만 그 모델의 권장값으로 시작한다
     $model.on('change', () => {
+        const first = !settings.model;
         setSetting('model', String($model.val()));
-        applyRecommended();
+        if (first) applyRecommended();
         fillModelInfo();
     });
     fillForm('');
