@@ -332,10 +332,21 @@ export function mountGalleryView(container, { onUseMeta }) {
     }
 
     function closeViewer() {
+        // 목록으로 돌아가면 마지막으로 보던 그림 자리로(맨 위로 튀지 않게). 넘기다 아직 안 그린 쪽까지 갔으면 거기까지 그린다
+        const viewed = index;
+        const file = viewed >= 0 ? files[viewed] : undefined;
         index = -1;
         $viewer.prop('hidden', true);
         $grid.prop('hidden', false);
-        renderMoreButton();
+        if (file !== undefined && viewed >= rendered) {
+            shownTarget = Math.ceil((viewed + 1) / GALLERY_PAGE) * GALLERY_PAGE;
+            fillGrid();
+        } else {
+            renderMoreButton();
+        }
+        if (file !== undefined) {
+            $grid.find('.stng-gallery-thumb').filter((_, el) => el.dataset.file === file)[0]?.scrollIntoView({ block: 'center' });
+        }
     }
 
     /** @param {number} step */
