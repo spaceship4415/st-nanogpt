@@ -152,6 +152,37 @@ export function installInserts() {
     store.preload().then(renderAll).catch(error => console.warn(LOG_PREFIX, 'could not load inserts', error));
 }
 
+/**
+ * 갤러리에서 이미지 파일을 지웠을 때: 그 그림을 끼워 넣은 기록을 모두 지우고 화면에서도 뺀다
+ * (안 그러면 메시지 아래에 깨진 그림이 남는다)
+ * @param {string} url '/user/images/<폴더>/<파일>'
+ */
+export async function removeInsertsByUrl(url) {
+    // '/user/images/a b/x.jpg' 와 'user/images/a%20b/x.jpg' 를 같은 것으로
+    const normalize = (/** @type {string} */ value) => {
+        const path = String(value).replace(/^\/+/, '');
+        try {
+            return decodeURIComponent(path);
+        } catch {
+            return path;
+        }
+    };
+    const target = normalize(url);
+    const same = (/** @type {string} */ value) => normalize(value) === target;
+    for (const [key, record] of await store.entries()) {
+        if (!record?.images?.some(same)) continue;
+        const images = record.images.filter(x => !same(x));
+        if (images.length) await store.set(key, { ...record, images });
+        else await store.remove(key);
+    }
+    for (const [key, list] of tempInserts) {
+        const images = list.filter(x => !same(x));
+        if (images.length) tempInserts.set(key, images);
+        else tempInserts.delete(key);
+    }
+    renderAll();
+}
+
 /** 확장을 지울 때 */
 export function deleteInsertsFile() {
     return store.deleteFile();

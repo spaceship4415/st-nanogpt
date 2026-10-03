@@ -133,7 +133,7 @@
     "nanogpt_tools.delete": "삭제",
     "nanogpt_tools.cancel": "취소",
     "nanogpt_tools.gallery_delete_confirm": "이 이미지를 서버에서 삭제할까요?",
-    "nanogpt_tools.gallery_delete_warning": "되돌릴 수 없습니다. 이 이미지를 쓴 채팅 메시지에서는 이미지가 깨져 보입니다.",
+    "nanogpt_tools.gallery_delete_warning": "되돌릴 수 없습니다. 메시지 아래에 보여 주던 그림은 같이 빠지고, 메시지에 첨부했거나 맨 아래로 보낸 그림은 깨져 보입니다.",
     "nanogpt_tools.gallery_deleted": "이미지를 삭제했습니다.",
     "nanogpt_tools.gallery_delete_failed": "이미지를 삭제하지 못했습니다",
     "nanogpt_tools.gallery_info": "생성 정보",

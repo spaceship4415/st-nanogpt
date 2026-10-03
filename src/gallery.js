@@ -2,6 +2,7 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
+import { removeInsertsByUrl } from './inserts.js';
 import { openLightbox } from './lightbox.js';
 import { getContext } from '../../../../extensions.js';
 import { modelLabel } from './api.js';
@@ -227,7 +228,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         const message = $('<div></div>')
             .append($('<p></p>').text(tr('gallery_delete_confirm', 'Delete this image from the server?')))
             .append($('<small class="stng-muted"></small>').text(file))
-            .append($('<p class="stng-muted"></p>').text(tr('gallery_delete_warning', 'This cannot be undone. Chat messages that use this image will show a broken image.')));
+            .append($('<p class="stng-muted"></p>').text(tr('gallery_delete_warning', 'This cannot be undone. If it is shown under a message, it is removed there too; if it was attached to a message or sent to the end of the chat, it will show as broken there.')));
         const result = await callGenericPopup(message, POPUP_TYPE.CONFIRM, '', { okButton: tr('delete', 'Delete'), cancelButton: tr('cancel', 'Cancel') });
         if (result !== POPUP_RESULT.AFFIRMATIVE) return;
 
@@ -242,6 +243,7 @@ export function mountGalleryView(container, { onUseMeta }) {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             forgetSavedImage(`/${path}`);
             removeImageMeta(path);
+            removeInsertsByUrl(`/${path}`);
             files.splice(index, 1);
             $grid.children().eq(index).remove();
             $count.text(scope() === 'chat' ? tr('gallery_count_chat', '{0} images from this chat', files.length) : tr('gallery_count', '{0} images', files.length));

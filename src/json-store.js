@@ -90,6 +90,10 @@ export function createJsonStore(fileName, getLimit) {
             trimTo(all, getLimit());
             scheduleSave();
         },
+        /** @returns {Promise<[string, T][]>} 모든 기록 */
+        async entries() {
+            return Object.entries(await load());
+        },
         /** @returns {Promise<number>} 지금 기록 개수 */
         async count() {
             return Object.keys(await load()).length;
