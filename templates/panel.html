@@ -218,6 +218,8 @@
                         <span></span>
                     </div>
                 </div>
+                <!-- 고른 모델의 글자 수 제한(접두사 포함). 제한을 모르는 모델이면 숨긴다. 글자는 image.js 가 넣는다 -->
+                <small class="stng-muted stng-prompt-count stng-total-count" hidden></small>
             </div>
 
             <details class="stng-advanced">
@@ -269,12 +271,14 @@
                         </div>
                         <small class="stng-help" hidden data-i18n="nanogpt_tools.prefix_hint">Added in front of every prompt, for style or quality tags.</small>
                         <textarea class="text_pole stng-img-prefix" rows="3" placeholder="masterpiece, best quality, ..."></textarea>
+                        <small class="stng-muted stng-prompt-count stng-prefix-count" hidden></small>
                     </div>
                     <div class="stng-field">
                         <div class="stng-adv-title">
                             <span data-i18n="nanogpt_tools.negative">Negative common prompt prefix</span>
                         </div>
                         <textarea class="text_pole stng-img-negative" rows="3" placeholder="lowres, bad anatomy, ..."></textarea>
+                        <small class="stng-muted stng-prompt-count stng-negative-count" hidden></small>
                     </div>
                 </div>
 

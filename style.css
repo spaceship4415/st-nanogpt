@@ -679,6 +679,16 @@ body.stng-no-mes-button .stng_mes_scene {
     color: var(--SmartThemeQuoteColor);
 }
 
+/* 프롬프트 글자 수 / 모델 제한 */
+.stng-prompt-count {
+    text-align: right;
+}
+
+.stng-prompt-count.stng-over {
+    color: #e5534b;
+    opacity: 1;
+}
+
 /* 고른 메시지 확인용 두 줄 미리보기 */
 .stng-scene-preview {
     padding: 8px 10px;

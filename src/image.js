@@ -584,6 +584,8 @@ export function mountImageView(container) {
      * @param {number} [tries]
      */
     function fitPrompt(tries = 20) {
+        // 프롬프트를 바꾸는 곳은 모두 여기를 거치므로 글자 수도 같이 센다
+        renderPromptCount();
         const el = $prompt[0];
         if (!(el instanceof HTMLTextAreaElement)) return;
         // 크게 보기 중에는 CSS 높이를 그대로 쓴다
@@ -603,6 +605,32 @@ export function mountImageView(container) {
         el.style.height = `${Math.min(Math.max(el.scrollHeight + 2, min), Math.round(window.innerHeight * 0.45))}px`;
     }
     $prompt.on('input', () => fitPrompt());
+
+    const $promptCount = $root.find('.stng-total-count');
+    const $prefixCount = $root.find('.stng-prefix-count');
+    const $negativeCount = $root.find('.stng-negative-count');
+
+    /**
+     * 고른 모델의 프롬프트 글자 수 제한 대비 지금 길이. NanoGPT 에 실제로 보내는 글(공통 접두사 + 프롬프트)을 센다.
+     * 제한을 모르는 모델이면 숨긴다. 공통·부정 접두사 칸 아래에는 각각의 글자 수(비었으면 숨김)
+     */
+    function renderPromptCount() {
+        const limit = getModelInfo(settings.model)?.promptLimit;
+        const countOf = (/** @type {string} */ text) => limit?.unit === 'utf16_code_units' ? text.length : [...text].length;
+        for (const [$count, text] of /** @type {[JQuery, string][]} */ ([[$prefixCount, settings.promptPrefix], [$negativeCount, settings.negativePrompt]])) {
+            const length = countOf(String(text ?? '').trim());
+            $count.prop('hidden', !length).text(tr('char_count', '{0} characters', length.toLocaleString()));
+        }
+        $promptCount.prop('hidden', !limit);
+        if (!limit) return;
+        const length = countOf(joinPrompt(settings.promptPrefix, String($prompt.val() ?? '')));
+        const over = length > limit.max;
+        const count = tr('prompt_count', '{0} / {1} characters', length.toLocaleString(), limit.max.toLocaleString());
+        const note = over
+            ? tr('prompt_count_over', 'Too long for this model. NanoGPT may refuse it.')
+            : settings.promptPrefix.trim() ? tr('prompt_count_prefix', 'includes the common prefix') : '';
+        $promptCount.text(note ? `${count} · ${note}` : count).toggleClass('stng-over', over);
+    }
 
     // 프롬프트 칸 크게 보기: 화면 높이의 대부분으로 늘렸다가 다시 원래대로
     const $expand = $root.find('.stng-prompt-expand');
@@ -676,6 +704,7 @@ export function mountImageView(container) {
         fillSizes();
         fillParams();
         renderRecommend();
+        renderPromptCount();
     }
 
     /** 고른 모델에 쓸 스텝·CFG(직접 고친 값, 없으면 권장값)를 칸에 채운다 */
@@ -799,6 +828,7 @@ export function mountImageView(container) {
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
         showStyle();
+        renderPromptCount();
     });
 
     $root.find('.stng-img-style-save').on('click', async () => {
@@ -890,10 +920,12 @@ export function mountImageView(container) {
     $prefix.on('input', () => {
         setSetting('promptPrefix', String($prefix.val()));
         showStyle();
+        renderPromptCount();
     });
     $negative.on('input', () => {
         setSetting('negativePrompt', String($negative.val()));
         showStyle();
+        renderPromptCount();
     });
     $steps.on('change', () => {
         const param = getModelInfo(settings.model)?.steps;

@@ -1,5 +1,6 @@
 import { getRequestHeaders } from '../../../../../script.js';
 import { SECRET_KEYS, secret_state } from '../../../../secrets.js';
+import { LOG_PREFIX } from './constants.js';
 
 /*
  * SillyTavern 코어에 이미 있는 NanoGPT 서버 엔드포인트만 쓴다.
@@ -7,7 +8,8 @@ import { SECRET_KEYS, secret_state } from '../../../../secrets.js';
  *   POST /api/nanogpt/credits       잔액 + 구독 사용량
  *   POST /api/sd/nanogpt/models     이미지 모델 목록
  *   POST /api/sd/nanogpt/generate   이미지 생성(base64 한 장)
- * 예외: 모델별 크기·권장 스텝·CFG 는 ST 서버 목록에 없어서 NanoGPT 의 공개 모델 목록(키 없이, GET /api/models)을 직접 읽는다.
+ * 예외: 모델별 크기·권장 스텝·CFG·프롬프트 글자 수 제한은 ST 서버 목록에 없어서 NanoGPT 의 공개 모델 목록
+ * (키 없이, GET /api/models 와 GET /api/v1/image-models?detailed=true)을 직접 읽는다.
  */
 
 /**
@@ -128,10 +130,18 @@ export function fetchImageModels(force = false) {
  */
 
 /**
+ * 프롬프트 글자 수 제한. 세는 단위가 모델마다 다르다(한글은 둘 다 1자, 이모지는 utf16 이면 2자)
+ * @typedef {object} PromptLimit
+ * @property {number} max
+ * @property {'unicode_code_points'|'utf16_code_units'} unit
+ */
+
+/**
  * @typedef {object} ModelInfo
  * @property {ModelSize[]|null} sizes 픽셀 크기가 정해져 있지 않으면 null
  * @property {ModelParam|null} steps 스텝을 받지 않는 모델이면 null
  * @property {ModelParam|null} scale CFG 를 받지 않는 모델이면 null
+ * @property {PromptLimit|null} promptLimit NanoGPT 도 모르는 모델이 많다(그러면 null)
  */
 
 /** @type {Promise<Map<string, ModelInfo>>|null} */
@@ -160,7 +170,31 @@ function readParam(m, keys) {
 }
 
 /**
- * 모델마다 받는 크기와 권장 스텝·CFG. ST 서버의 모델 목록에는 이 정보가 빠져 있어서
+ * 모델별 프롬프트 글자 수 제한. /api/models 에는 없고 자세한 이미지 모델 목록에만 있다.
+ * 못 받아도 크기·권장값은 쓸 수 있게 실패하면 빈 목록
+ * @returns {Promise<Map<string, PromptLimit>>}
+ */
+async function fetchPromptLimits() {
+    /** @type {Map<string, PromptLimit>} */
+    const map = new Map();
+    try {
+        const response = await fetch('https://nano-gpt.com/api/v1/image-models?detailed=true');
+        if (!response.ok) throw new ApiError(response.status);
+        const data = await response.json();
+        for (const m of Array.isArray(data?.data) ? data.data : []) {
+            const max = numberOrNull(m?.supported_parameters?.max_prompt_characters);
+            if (!m?.id || !max) continue;
+            const unit = m.supported_parameters.prompt_length?.unit === 'utf16_code_units' ? 'utf16_code_units' : 'unicode_code_points';
+            map.set(m.id, { max, unit });
+        }
+    } catch (error) {
+        console.warn(LOG_PREFIX, 'failed to load prompt limits', error);
+    }
+    return map;
+}
+
+/**
+ * 모델마다 받는 크기와 권장 스텝·CFG, 프롬프트 글자 수 제한. ST 서버의 모델 목록에는 이 정보가 빠져 있어서
  * NanoGPT 의 공개 목록(키 없이 받는 것)을 직접 읽는다.
  * 'auto', '2k', '16:9' 처럼 픽셀이 아닌 크기만 있는 모델은 sizes 가 null(기본 크기 선택지를 쓴다).
  * @param {boolean} [force]
@@ -169,11 +203,13 @@ function readParam(m, keys) {
 export function fetchModelInfo(force = false) {
     if (force || !infoPromise) {
         infoPromise = (async () => {
+            const limitsPromise = fetchPromptLimits();
             const response = await fetch('https://nano-gpt.com/api/models');
             if (!response.ok) throw new ApiError(response.status);
             const data = await response.json();
             const image = data?.models?.image;
             if (!image || typeof image !== 'object') throw new Error('Invalid response');
+            const limits = await limitsPromise;
             /** @type {Map<string, ModelInfo>} */
             const map = new Map();
             for (const m of Object.values(image)) {
@@ -191,6 +227,7 @@ export function fetchModelInfo(force = false) {
                     sizes: sizes.length ? sizes : null,
                     steps: readParam(m, ['num_inference_steps', 'steps']),
                     scale: readParam(m, ['guidance_scale', 'CFGScale', 'cfg_scale']),
+                    promptLimit: limits.get(m.model) ?? null,
                 });
             }
             modelInfo = map;
