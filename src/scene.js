@@ -1,4 +1,4 @@
-import { generateRaw, substituteParams } from '../../../../../script.js';
+import { event_types, eventSource, generateRaw, substituteParams } from '../../../../../script.js';
 import { getContext } from '../../../../extensions.js';
 import { ConnectionManagerRequestService } from '../../../shared.js';
 import { SCENE_PROMPTS_FILE } from './constants.js';
@@ -262,7 +262,22 @@ export async function promptFromScene(messageId, signal) {
             throw new Error(tr('scene_profile_failed', 'The connection profile request failed: {0}', reason));
         }
     } else {
-        result = await generateRaw({ prompt, systemPrompt, responseLength: SCENE_RESPONSE_LENGTH });
+        // generateRaw 의 responseLength 는 ST 설정의 '최대 응답 길이'를 잠깐 바꿨다 되돌리는데, 다른 확장의
+        // 백그라운드 생성과 겹치면 바뀐 값이 그대로 남을 수 있다. 그래서 설정은 건드리지 않고 이 요청의 본문에만 길이를 넣는다
+        // (채팅 완성 API 만. 텍스트 완성은 사용자의 응답 길이를 그대로 쓴다)
+        // eventSource.once 는 함수를 감싸서 등록해 나중에 지울 수 없다(이벤트 전에 실패하면 다음 채팅 요청까지 바꿔 버린다).
+        // 그래서 on 으로 등록하고 한 번 쓰면 스스로, 못 썼으면 finally 에서 지운다
+        const setLength = (/** @type {Record<string, any>} */ data) => {
+            eventSource.removeListener(event_types.CHAT_COMPLETION_SETTINGS_READY, setLength);
+            if ('max_completion_tokens' in data) data.max_completion_tokens = SCENE_RESPONSE_LENGTH;
+            else data.max_tokens = SCENE_RESPONSE_LENGTH;
+        };
+        eventSource.on(event_types.CHAT_COMPLETION_SETTINGS_READY, setLength);
+        try {
+            result = await generateRaw({ prompt, systemPrompt });
+        } finally {
+            eventSource.removeListener(event_types.CHAT_COMPLETION_SETTINGS_READY, setLength);
+        }
     }
     const text = String(result ?? '')
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
