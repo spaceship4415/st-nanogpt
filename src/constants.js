@@ -82,8 +82,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
     // 이미지 생성
     model: '',
     size: '1024x1024',
+    // 모델 정보가 없는 모델에 쓰는 스텝·CFG(마지막으로 고친 값)
     steps: 30,
     scale: 7.5,
+    // 모델마다 직접 고친 스텝·CFG { [model]: { steps?, scale? } }. 없으면 그 모델의 권장값을 쓴다
+    modelParams: {},
     negativePrompt: '',
     // 모든 프롬프트 앞에 붙는 고정 문구(화풍·품질 태그 등)
     promptPrefix: '',

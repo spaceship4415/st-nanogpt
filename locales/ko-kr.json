@@ -75,7 +75,7 @@
     "nanogpt_tools.negative": "부정 공통 프롬프트 접두사",
     "nanogpt_tools.steps": "샘플링 단계",
     "nanogpt_tools.scale": "CFG 스케일",
-    "nanogpt_tools.advanced_hint": "여기서 바꾼 값은 저장돼서 다음에도 그대로 쓰입니다. 모델에 따라 샘플링 단계·CFG·부정 프롬프트를 무시하기도 합니다.",
+    "nanogpt_tools.advanced_hint": "여기서 바꾼 값은 저장돼서 다음에도 그대로 쓰입니다. 샘플링 단계·CFG 는 모델마다 따로 기억하고, 고친 적 없는 모델은 권장값을 씁니다. 모델에 따라 샘플링 단계·CFG·부정 프롬프트를 무시하기도 합니다.",
     "nanogpt_tools.generate": "생성",
     "nanogpt_tools.stop": "중지",
     "nanogpt_tools.generating": "생성 중… 시간이 좀 걸릴 수 있습니다.",

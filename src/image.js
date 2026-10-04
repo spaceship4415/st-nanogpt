@@ -82,6 +82,34 @@ function clampParam(value, param) {
 }
 
 /**
+ * 모델에 쓸 스텝·CFG. 그 모델에서 직접 고친 값 → 모델 권장값 → 공통 값(모델 정보를 모를 때) 순서로,
+ * 모델이 받는 범위 안으로. 터보·증류 모델(z-image-turbo 의 CFG 0 등)에 다른 모델의 값이 가지 않게 모델마다 따로 둔다
+ * @param {string} model
+ * @returns {{ steps: number, scale: number }}
+ */
+function paramsFor(model) {
+    const settings = getSettings();
+    const saved = settings.modelParams[model] ?? {};
+    const info = getModelInfo(model);
+    const pick = (/** @type {any} */ value, /** @type {import('./api.js').ModelParam|null|undefined} */ param, /** @type {number} */ common) =>
+        clampParam([value, param?.recommended].find(v => typeof v === 'number' && Number.isFinite(v)) ?? common, param);
+    return { steps: pick(saved.steps, info?.steps, settings.steps), scale: pick(saved.scale, info?.scale, settings.scale) };
+}
+
+/**
+ * 그 모델의 스텝·CFG 로 저장한다. 공통 값(모델 정보가 없는 모델용)도 같이 바꾼다. model 이 없으면 공통 값만
+ * @param {string} model
+ * @param {{ steps?: number, scale?: number }} values
+ */
+function saveModelParams(model, values) {
+    const settings = getSettings();
+    if (values.steps !== undefined) setSetting('steps', values.steps);
+    if (values.scale !== undefined) setSetting('scale', values.scale);
+    if (!model) return;
+    setSetting('modelParams', { ...settings.modelParams, [model]: { ...settings.modelParams[model], ...values } });
+}
+
+/**
  * 크기 선택지. 모델이 받는 크기를 알면 그것만, 모르면 기본 선택지
  * @param {string} model
  * @returns {{ value: string, text: string }[]}
@@ -122,9 +150,7 @@ export async function createImage({ prompt, model, size, negativePrompt, source 
     const fitted = info?.sizes ? nearestSize(info.sizes, width, height) : null;
     if (fitted) ({ width, height } = fitted);
     const negative = negativePrompt ?? settings.negativePrompt;
-    // 모델이 받는 범위를 벗어나면 범위 안으로(예: 스텝이 12까지인 터보 모델에 30을 보내지 않게)
-    const steps = clampParam(Number.isFinite(Number(settings.steps)) ? Number(settings.steps) : 30, info?.steps);
-    const scale = clampParam(Number.isFinite(Number(settings.scale)) ? Number(settings.scale) : 7.5, info?.scale);
+    const { steps, scale } = paramsFor(finalModel);
     // 기다리는 사이 채팅을 옮겨도(명령어로 만들 때) 시작한 채팅의 폴더·기록으로 남게 미리 잡아 둔다
     const chatId = getContext().getCurrentChatId?.() || null;
     const folder = galleryFolder();
@@ -404,7 +430,9 @@ export function importFromImageGeneration() {
     if (!sd || typeof sd !== 'object') throw new Error(tr('sd_missing', 'The Image Generation extension has no settings yet.'));
 
     const imported = [];
-    if (sd.source === 'nanogpt' && sd.model) {
+    // 스텝·CFG 는 가져온 모델의 값으로. 다른 소스(SDXL 등)의 값은 모델 정보가 없는 모델에만 쓰는 공통 값으로
+    const target = sd.source === 'nanogpt' && sd.model ? String(sd.model) : '';
+    if (target) {
         setSetting('model', String(sd.model));
         imported.push(tr('model', 'Model'));
     }
@@ -415,11 +443,11 @@ export function importFromImageGeneration() {
         imported.push(tr('size', 'Size'));
     }
     if (Number(sd.steps) > 0) {
-        setSetting('steps', Number(sd.steps));
+        saveModelParams(target, { steps: Number(sd.steps) });
         imported.push(tr('steps', 'Sampling steps'));
     }
     if (Number.isFinite(Number(sd.scale))) {
-        setSetting('scale', Number(sd.scale));
+        saveModelParams(target, { scale: Number(sd.scale) });
         imported.push(tr('scale', 'CFG scale'));
     }
     if (typeof sd.prompt_prefix === 'string') {
@@ -479,9 +507,8 @@ export function applyImageMeta(meta, run = false) {
 function storeImageMeta(meta) {
     if (meta.model) setSetting('model', meta.model);
     if (meta.width > 0 && meta.height > 0) setSetting('size', `${meta.width}x${meta.height}`);
-    if (meta.steps > 0) setSetting('steps', meta.steps);
     // CFG 0 도 쓰는 모델이 있다(z-image-turbo). 스텝이 기록돼 있으면 CFG 도 기록된 값이다
-    if (meta.steps > 0 && meta.scale >= 0) setSetting('scale', meta.scale);
+    if (meta.steps > 0) saveModelParams(meta.model || getSettings().model, meta.scale >= 0 ? { steps: meta.steps, scale: meta.scale } : { steps: meta.steps });
     setSetting('promptPrefix', meta.promptPrefix ?? '');
     setSetting('negativePrompt', meta.negativePrompt ?? '');
 }
@@ -636,8 +663,6 @@ export function mountImageView(container) {
         }
         $prefix.val(settings.promptPrefix);
         $negative.val(settings.negativePrompt);
-        $steps.val(settings.steps);
-        $scale.val(settings.scale);
         if (settings.model && !$model.find('option').filter((_, o) => /** @type {HTMLOptionElement} */ (o).value === settings.model).length) {
             $model.append(new Option(settings.model, settings.model));
         }
@@ -646,10 +671,18 @@ export function mountImageView(container) {
         fillStyles();
     }
 
-    /** 고른 모델에 맞춰 크기 선택지와 권장 스텝·CFG 안내를 다시 그린다 */
+    /** 고른 모델에 맞춰 크기 선택지, 그 모델의 스텝·CFG, 권장값 안내를 다시 그린다 */
     function fillModelInfo() {
         fillSizes();
+        fillParams();
         renderRecommend();
+    }
+
+    /** 고른 모델에 쓸 스텝·CFG(직접 고친 값, 없으면 권장값)를 칸에 채운다 */
+    function fillParams() {
+        const { steps, scale } = paramsFor(settings.model);
+        $steps.val(steps);
+        $scale.val(scale);
     }
 
     /**
@@ -682,6 +715,9 @@ export function mountImageView(container) {
             return `${name} ${param.recommended ?? '?'}${range}`;
         };
         $recommend.prop('hidden', !info);
+        // 받지 않는 값은 고쳐도 소용없으니 잠근다(모델 정보를 모르면 둘 다 열어 둔다)
+        $steps.prop('disabled', !!info && !info.steps);
+        $scale.prop('disabled', !!info && !info.scale);
         if (!info) return;
         $recommendText.text(tr('recommended', 'Recommended for this model: {0} · {1}', describe(info.steps, tr('steps', 'Sampling steps')), describe(info.scale, tr('scale', 'CFG scale'))));
         $steps.attr({ min: info.steps?.min ?? 1, max: info.steps?.max ?? 150 });
@@ -689,13 +725,13 @@ export function mountImageView(container) {
         $recommend.find('.stng-img-recommend-apply').prop('hidden', info.steps?.recommended == null && info.scale?.recommended == null);
     }
 
-    /** 모델의 권장 스텝·CFG 로 바꾼다(모델이 받지 않거나 권장값이 없는 것은 그대로) */
+    /** 이 모델에서 직접 고친 스텝·CFG 를 지우고 권장값으로 되돌린다 */
     function applyRecommended() {
-        const info = getModelInfo(settings.model);
-        if (info?.steps?.recommended != null) setSetting('steps', info.steps.recommended);
-        if (info?.scale?.recommended != null) setSetting('scale', info.scale.recommended);
-        $steps.val(settings.steps);
-        $scale.val(settings.scale);
+        if (settings.model && settings.modelParams[settings.model]) {
+            const { [settings.model]: _, ...rest } = settings.modelParams;
+            setSetting('modelParams', rest);
+        }
+        fillParams();
     }
     $recommend.find('.stng-img-recommend-apply').on('click', applyRecommended);
 
@@ -861,20 +897,17 @@ export function mountImageView(container) {
     });
     $steps.on('change', () => {
         const param = getModelInfo(settings.model)?.steps;
-        setSetting('steps', Math.round(readNumber($steps, 30, param?.min ?? 1, param?.max ?? 150)));
-        $steps.val(settings.steps);
+        saveModelParams(settings.model, { steps: Math.round(readNumber($steps, paramsFor(settings.model).steps, param?.min ?? 1, param?.max ?? 150)) });
+        fillParams();
     });
     $scale.on('change', () => {
         const param = getModelInfo(settings.model)?.scale;
-        setSetting('scale', readNumber($scale, 7.5, param?.min ?? 0, param?.max ?? 30));
-        $scale.val(settings.scale);
+        saveModelParams(settings.model, { scale: readNumber($scale, paramsFor(settings.model).scale, param?.min ?? 0, param?.max ?? 30) });
+        fillParams();
     });
-    // 모델을 바꿔도 사용자가 넣은 샘플링 단계·CFG 는 그대로 둔다(권장값은 안내와 [권장값으로] 버튼으로만).
-    // 모델을 처음 고를 때(아직 고른 적이 없을 때)만 그 모델의 권장값으로 시작한다
+    // 모델을 바꾸면 그 모델에서 고쳐 둔 샘플링 단계·CFG(없으면 그 모델의 권장값)로 바뀐다
     $model.on('change', () => {
-        const first = !settings.model;
         setSetting('model', String($model.val()));
-        if (first) applyRecommended();
         fillModelInfo();
     });
     fillForm('');

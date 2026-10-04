@@ -76,6 +76,7 @@ function normalize(stored) {
         ? BADGE_ITEMS.filter(item => result.badgeItems.includes(item))
         : [...DEFAULT_SETTINGS.badgeItems];
     if (!BADGE_UNITS.includes(result.badgeUnit)) result.badgeUnit = DEFAULT_SETTINGS.badgeUnit;
+    if (!result.modelParams || Array.isArray(result.modelParams)) result.modelParams = {};
     result.sceneContextMessages = clampContext(result.sceneContextMessages);
     // 프롬프트 칸은 열 때마다 빈칸이라 예전 '마지막 프롬프트'는 더 쓰지 않는다
     delete result.lastPrompt;
