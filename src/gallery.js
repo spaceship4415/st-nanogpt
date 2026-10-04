@@ -1,4 +1,5 @@
 import { getRequestHeaders } from '../../../../../script.js';
+import { copyText } from '../../../../utils.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../../popup.js';
 import { GALLERY_PAGE, LOG_PREFIX } from './constants.js';
 import { tr } from './i18n.js';
@@ -72,6 +73,8 @@ export function mountGalleryView(container, { onUseMeta }) {
     const $noMeta = $viewer.find('.stng-gallery-nometa');
     /** 지금 보고 있는 이미지의 생성 정보 @type {import('./image-meta.js').ImageMeta|null} */
     let currentMeta = null;
+    /** 생성 정보 [복사] 내용 */
+    let metaCopyText = '';
 
     /** @type {string[]} */
     let files = [];
@@ -261,6 +264,9 @@ export function mountGalleryView(container, { onUseMeta }) {
 
     /** @param {number} i */
     function openViewer(i) {
+        // 격자에서 새로 들어올 때는 생성 정보를 접고 이미지 맨 위부터 보여 준다(이전/다음으로 넘길 때는 펼친 채로 둔다)
+        const fromGrid = index < 0;
+        if (fromGrid) $info.prop('open', false);
         index = i;
         const folder = String($folder.val() || '');
         const url = imageUrl(folder, files[i]);
@@ -274,7 +280,7 @@ export function mountGalleryView(container, { onUseMeta }) {
         // 상세 화면에서는 격자용 버튼([선택]·[더 보기])을 숨긴다
         $selectToggle.prop('hidden', true);
         $more.prop('hidden', true);
-        $viewer[0].scrollIntoView({ block: 'nearest' });
+        $viewer[0].scrollIntoView({ block: fromGrid ? 'start' : 'nearest' });
         renderMeta(url);
     }
 
@@ -301,6 +307,7 @@ export function mountGalleryView(container, { onUseMeta }) {
     /** @param {string} url */
     async function renderMeta(url) {
         currentMeta = null;
+        metaCopyText = '';
         renderSendLabel();
         $info.prop('hidden', true);
         $noMeta.prop('hidden', true);
@@ -319,18 +326,23 @@ export function mountGalleryView(container, { onUseMeta }) {
         const styleName = meta.style || '';
         $info.find('summary > span').text([tr('gallery_info', 'Generation info'), styleName, modelLabel(meta.model), `${meta.width}×${meta.height}`].filter(Boolean).join(' · '));
         const $list = $info.find('.stng-meta-list').empty();
-        /** @param {string} label @param {string} value */
-        const row = (label, value) => {
-            if (value) $list.append($('<dt></dt>').text(label), $('<dd></dd>').text(value));
+        /** [복사]로 넘길 줄들 @type {string[]} */
+        const copyLines = [];
+        /** @param {string} label @param {string} value @param {boolean} [copy] [복사]에 넣을지 */
+        const row = (label, value, copy = true) => {
+            if (!value) return;
+            $list.append($('<dt></dt>').text(label), $('<dd></dd>').text(value));
+            if (copy) copyLines.push(`${label}: ${value}`);
         };
         row(tr('model', 'Model'), modelLabel(meta.model) === meta.model ? meta.model : `${modelLabel(meta.model)} (${meta.model})`);
         row(tr('size', 'Size'), `${meta.width}×${meta.height}`);
-        row(tr('style', 'Style'), styleName || tr('style_none_meta', 'None'));
+        row(tr('style', 'Style'), styleName || tr('style_none_meta', 'None'), false);
         row(`${tr('steps', 'Sampling steps')} · ${tr('scale', 'CFG scale')}`, meta.steps ? `${meta.steps} · ${meta.scale ?? '-'}` : '-');
         row(tr('prompt', 'Prompt'), meta.prompt);
         row(tr('prefix', 'Common prompt prefix'), meta.promptPrefix);
         row(tr('negative', 'Negative common prompt prefix'), meta.negativePrompt);
-        if (meta.createdAt) row(tr('created', 'Created'), new Date(meta.createdAt).toLocaleString());
+        if (meta.createdAt) row(tr('created', 'Created'), new Date(meta.createdAt).toLocaleString(), false);
+        metaCopyText = copyLines.join('\n');
         $info.prop('hidden', false);
     }
 
@@ -405,6 +417,16 @@ export function mountGalleryView(container, { onUseMeta }) {
         }
     });
 
+    $viewer.find('.stng-gallery-copy-meta').on('click', async () => {
+        if (!metaCopyText) return;
+        try {
+            await copyText(metaCopyText);
+            toastr.success(tr('copied_info', 'Copied the generation info.'));
+        } catch (error) {
+            console.error(LOG_PREFIX, 'copy failed', error);
+            toastr.error(tr('copy_failed', 'Could not copy to the clipboard.'));
+        }
+    });
     $viewer.find('.stng-gallery-regen').on('click', () => currentMeta && onUseMeta(currentMeta, true));
     $viewer.find('.stng-gallery-load').on('click', () => currentMeta && onUseMeta(currentMeta, false));
 
