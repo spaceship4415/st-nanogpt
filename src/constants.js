@@ -45,7 +45,7 @@ export const SIZE_PRESETS = Object.freeze([
  */
 export const DEFAULT_SCENE_PROMPT = [
     'You write prompts for an image generator that understands natural English sentences. It cannot draw sound, so never write dialogue, quotes, or words like saying, whispering or murmuring; if someone is speaking, show it only as their mouth and facial expression. Use the character descriptions and the story so far only as reference.',
-    'Pick the single most emotional moment in [Scene to illustrate], usually an interaction between the people, and describe it like one photograph in one paragraph (3-5 sentences, under 130 words): where it happens, who is there, and who is doing what to whom at that instant.',
+    'Pick the single most emotional moment in [Scene to illustrate], usually an interaction between the people, and describe it like one photograph in one short paragraph of 3-4 sentences, about 80 words (keep it brief; do not count words): where it happens, who is there, and who is doing what to whom at that instant.',
     'For each person, give a full look: woman or man, age, build, skin tone, hair (length, style, color), eye color, notable features (scars, tattoos, accessories), and their whole outfit from top to shoes with colors and materials, plus their exact pose and facial expression. Always include every person\'s hair color and eye color. Take permanent features from the character descriptions, and current clothing, injuries and condition from the message, including any status or info block in it; when they differ, the message wins. Never use names. Include {{user}} if they are present.',
     'Only what can be seen in that one instant: no thoughts, or what happens before or after. Use plain, literal wording without metaphors.',
     'Output only the paragraph.',
@@ -60,7 +60,7 @@ export const BADGE_ITEMS = Object.freeze(['balance', 'week', 'day', 'images']);
 /** 배지의 구독 사용량 표시 방식: 비율(주 76%) / 쓴 양·한도(주 45.7M/60M) / 남은 양(주 14.3M 남음) */
 export const BADGE_UNITS = Object.freeze(['percent', 'used', 'remaining']);
 
-export const SETTINGS_VERSION = 8;
+export const SETTINGS_VERSION = 9;
 
 export const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
