@@ -203,9 +203,10 @@ function buildScenePrompt(messageId) {
 
 /**
  * 답의 최대 길이(토큰). 키워드 목록 자체는 짧지만, 생각(추론)하는 모델은 생각에도 이 한도를 써서
- * 너무 작으면 답이 몇 단어에서 끊긴다
+ * 너무 작으면 답이 몇 단어에서 끊기거나 아예 빈다(GLM 5.2 thinking 은 생각에만 1200 가까이 쓰기도 한다).
+ * 실제로 쓴 만큼만 과금되니 넉넉히 둔다
  */
-const SCENE_RESPONSE_LENGTH = 1200;
+const SCENE_RESPONSE_LENGTH = 5000;
 
 /**
  * '프롬프트 자동생성'에 쓸 수 있는 연결 프로필 목록. 연결 관리자 확장이 꺼져 있으면 null.
@@ -275,6 +276,10 @@ export async function promptFromScene(messageId, signal) {
         eventSource.on(event_types.CHAT_COMPLETION_SETTINGS_READY, setLength);
         try {
             result = await generateRaw({ prompt, systemPrompt });
+        } catch (error) {
+            // ST 는 빈 답이면 오류를 던진다. 연결 프로필 경로처럼 '빈 답' 안내로 보여 준다
+            if (error?.message !== 'No message generated') throw error;
+            result = '';
         } finally {
             eventSource.removeListener(event_types.CHAT_COMPLETION_SETTINGS_READY, setLength);
         }

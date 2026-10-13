@@ -1262,7 +1262,7 @@ export function mountImageView(container) {
                 sceneLink = link;
                 sceneSourceId = messageId >= 0 ? messageId : null;
             } else {
-                toastr.warning(tr('scene_empty', 'The model returned nothing.'));
+                toastr.warning(tr('scene_empty', 'Empty reply. Try again, or pick a profile with a non-thinking model in extension settings › Auto-write prompt › Connection.'));
             }
         } catch (error) {
             if (run !== sceneRun) return;
